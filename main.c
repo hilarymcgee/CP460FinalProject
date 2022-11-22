@@ -173,6 +173,12 @@ unsigned short g(unsigned short a) {
         a = a ^ 0x11b;
     }
 
+    if (a > 0xff) {
+        //printf("Error: g(%02x) > 0xff", a);
+        a = (a ^ 0x11b) & 0xff;
+        //printf(" -> %02x\n", a);
+    }
+
     return a;
 }
 
@@ -250,7 +256,7 @@ void mixColumns(unsigned short * state) {
 void inverse_mixColumns(unsigned short * state) {
     unsigned short * temp = malloc(16);
     int i;
-    int j;
+    int a, b, c, d;
 
     // * 9 == << 3 + original
     // * 11 == << 3 + << 1 + original
@@ -258,59 +264,51 @@ void inverse_mixColumns(unsigned short * state) {
     // * 14 == << 3 + << 2 + << 1 + original
 
     for (i = 0; i < 4; i++) {
-        j = i * 4;
+        a = i;
+        b = i+4;
+        c = i+8;
+        d = i+12;
+
         // ~ = 14, 11, 13, 9
-        temp[j] = (unsigned short) (
-            // 14 * a0
-            ((state[j] << 3) + (state[j] << 2) + (state[j] << 1) + state[j])
+        temp[a] = (unsigned short) (
+            (g(state[a] << 3) ^ g(state[a] << 2) ^ g(state[a] << 1) ^ state[a])
             ^
-            // 11 * a1
-            ((state[j+1] << 3) + (state[j+1] << 1) + state[j+1])
+            (g(state[b] << 3) ^ g(state[b] >> 1) ^ state[b])
             ^
-            // 13 * a2
-            ((state[j+2] << 3) + (state[j+2] << 2) + state[j+2])
+            (g(state[c] << 3) ^ g(state[c] << 2) ^ state[c])
             ^
-            // 9 * a3
-            ((state[j+3] << 3) + state[j+3]));
+            (g(state[d] << 3) ^ state[d])
+        );
         // ~ = 9, 14, 11, 13
-        temp[j+1] = (unsigned short) (
-            // 9 * a0
-            ((state[j] << 3) + state[j])
+        temp[b] = (unsigned short) (
+            (g(state[a] << 3) ^ state[a])
             ^
-            // 14 * a1
-            ((state[j+1] << 3) + (state[j+1] << 2) + (state[j+1] << 1) + state[j+1])
+            (g(state[b] << 3) ^ g(state[b] << 2) ^ g(state[b] << 1) ^ state[b])
             ^
-            // 11 * a2
-            ((state[j+2] << 3) + (state[j+2] << 1) + state[j+2])
+            (g(state[c] << 3) ^ g(state[c] >> 1) ^ state[c])
             ^
-            // 13 * a3
-            ((state[j+3] << 3) + (state[j+3] << 2) + state[j+3]));
+            (g(state[d] << 3) ^ g(state[d] << 2) ^ state[d])
+        );
         // ~ = 13, 9, 14, 11
-        temp[j+2] = (unsigned short) (
-            // 13 * a0
-            ((state[j] << 3) + (state[j] << 2) + state[j])
+        temp[c] = (unsigned short) (
+            (g(state[a] << 3) ^ g(state[a] << 2) ^ state[a])
             ^
-            // 9 * a1
-            ((state[j+1] << 3) + state[j+1])
+            (g(state[b] << 3) ^ state[b])
             ^
-            // 14 * a2
-            ((state[j+2] << 3) + (state[j+2] << 2) + (state[j+2] << 1) + state[j+2])
+            (g(state[c] << 3) ^ g(state[c] << 2) ^ g(state[c] << 1) ^ state[c])
             ^
-            // 11 * a3
-            ((state[j+3] << 3) + (state[j+3] << 1) + state[j+3]));
+            (g(state[d] << 3) ^ g(state[d] >> 1) ^ state[d])
+        );
         // ~ = 11, 13, 9, 14
-        temp[j+3] = (unsigned short) (
-            // 11 * a0
-            ((state[j] << 3) + (state[j] << 1) + state[j])
+        temp[d] = (unsigned short) (
+            (g(state[a] << 3) ^ g(state[a] >> 1) ^ state[a])
             ^
-            // 13 * a1
-            ((state[j+1] << 3) + (state[j+1] << 2) + state[j+1])
+            (g(state[b] << 3) ^ g(state[b] << 2) ^ state[b])
             ^
-            // 9 * a2
-            ((state[j+2] << 3) + state[j+2])
+            (g(state[c] << 3) ^ state[c])
             ^
-            // 14 * a3
-            ((state[j+3] << 3) + (state[j+3] << 2) + (state[j+3] << 1) + state[j+3]));
+            (g(state[d] << 3) ^ g(state[d] << 2) ^ g(state[d] << 1) ^ state[d])
+        );
     }
 
     for (i = 0; i < 16; i++) {
@@ -329,9 +327,8 @@ int main() {
         0xA6, 0x8C, 0xD8, 0x95
     };
 
-    printf("Before:\n");
+    printf("\nBefore:\n");
     printMatrix(a);
-    printf("\n");
 
     mixColumns(a);
     //subBytes(a);
@@ -339,7 +336,6 @@ int main() {
 
     printf("After:\n");
     printMatrix(a);
-    printf("\n");
 
     /*
         Expected Output of a:
@@ -349,45 +345,33 @@ int main() {
         ED A5 A6 BC
     */
 
-    //inverse_mixColumns(a);
+    inverse_mixColumns(a);
     //inverse_subBytes(a);
     //inverse_shiftSubRows(a);
 
-    //printf("\nAfter inverse:\n");
-    //printMatrix(a);
+    printf("\nAfter inverse:\n");
+    printMatrix(a);
+    printf("\n");
 
-    /*
-    unsigned short d;
-    unsigned short e;
-    for (int i = 128; i < 256; i++) {
-        d = 0x02 * i;
-        e = (0x02 * i) ^ 0;
-        printf("%d, %02x %02x %02x\n", i, mul2[i], d, e);
-    }
-    */
+    unsigned short e = 0x4C;
+    unsigned short e1, e2, e3, e4;
 
-    // https://crypto.stackexchange.com/questions/2402/how-to-solve-mixcolumns
+    //e * 14
+    e = g(e << 3) ^ g(e << 2) ^ g(e << 1) ^ e;
+    e1 = g(e << 3);
+    e2 = g(e << 2);
+    e3 = g(e << 1);
+    e4 = e;
 
-    unsigned short e = 0xBF;
-    unsigned short f = g(e << 1 ^ e);
-    unsigned short f2 = g(e << 1) ^ e; // wrong!
+    printBinary(e1, 16);
+    printBinary(e2, 16);
+    printBinary(e3, 16);
+    printBinary(e4, 16);
+    printf("\n");
 
-    printf("f : 0xBF * 3 in GF(2^8)  = ");
-    printBinary(f, 8);
-    printf("f2: 0xBF * 3 in GF(2^8) != ");
-    printBinary(f2, 8);
-
-    unsigned short k = 0xF2;
-    unsigned short l = g(k << 1) ^ k;
-    unsigned short l2 = g(k << 1 ^ k); // wrong!
-
-    printf("l : 0xF2 * 3 in GF(2^8)  = ");
-    printBinary(l, 8);
-    printf("l2: 0xF2 * 3 in GF(2^8) != ");
-    printBinary(l2, 8);
-
-    // Notice the bracket change between the two, but the result of the multiplication only correct when the brackets are there *sometimes and sometimes correct when not there.
-    // fml
+    printf("%02x\n", e);
+    printBinary(e, 8);
+    //1110 0101
 
     return 0;
 }
