@@ -58,6 +58,23 @@ unsigned char inv_sbox[256] = {
     0x17, 0x2b, 0x04, 0x7e, 0xba, 0x77, 0xd6, 0x26, 0xe1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0c, 0x7d
 };
 
+void printMatrix(unsigned char * state) {
+    int i;
+    for (i = 0; i < 16; i++) {
+        printf("%02x ", state[i]);
+        if (i % 4 == 3) {
+            printf("\n");
+        }
+    }
+}
+
+void printBinary(unsigned char n, int size) {
+    int i;
+    for (i = size-1; i >= 0; i--) {
+        printf("%d", (n >> i) & 1);
+    }
+    printf("\n");
+}
 
 void shiftSubRows(unsigned char * state) {
     /*
@@ -153,7 +170,7 @@ unsigned char g(unsigned char a) {
 
     // if the high bit is set, xor with 0x1b
     if (hi_bit_set == 0x80) {
-        a = a ^ 0x1b;
+        a = a ^ 0x11b;
     }
 
     return a;
@@ -302,23 +319,7 @@ void inverse_mixColumns(unsigned char * state) {
     free(temp);
 }
 
-void printMatrix(unsigned char * state) {
-    int i;
-    for (i = 0; i < 16; i++) {
-        printf("%02x ", state[i]);
-        if (i % 4 == 3) {
-            printf("\n");
-        }
-    }
-}
 
-void printBinary(unsigned char n) {
-    int i;
-    for (i = 7; i >= 0; i--) {
-        printf("%d", (n >> i) & 1);
-    }
-    printf("\n");
-}
 
 int main() {
     unsigned char a[16] = {
@@ -364,13 +365,19 @@ int main() {
     }
     */
 
-    unsigned char e = 0x4C;
-    unsigned char f = g(e << 1) ^ e;
+    unsigned char e = 0xBF;
+    unsigned char f = (g(e << 1) ^ e);
 
-    printf("\n%02x %02x\n", e, f);
+    // https://crypto.stackexchange.com/questions/2402/how-to-solve-mixcolumns
+
+    // The way I am multiplying by 3 is wrong but I don't know how to fix it
+    // f: should come out as 1c1 or 111000001 but is missing its most significant bit causing the output to be wrong
+
+
+    printf("\n%02x\n", f);
 
     printf("f: ");
-    printBinary(f);
+    printBinary(f, 9);
 
     return 0;
 }
