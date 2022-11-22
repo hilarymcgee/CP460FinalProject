@@ -19,7 +19,7 @@ Lookup Table:
 */
 
 //AES S-Box
-unsigned char sbox[256] = {
+unsigned short sbox[256] = {
     0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
     0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0,
     0xb7, 0xfd, 0x93, 0x26, 0x36, 0x3f, 0xf7, 0xcc, 0x34, 0xa5, 0xe5, 0xf1, 0x71, 0xd8, 0x31, 0x15,
@@ -39,7 +39,7 @@ unsigned char sbox[256] = {
 };
 
 //AES Inverse S-Box
-unsigned char inv_sbox[256] = {
+unsigned short inv_sbox[256] = {
     0x52, 0x09, 0x6a, 0xd5, 0x30, 0x36, 0xa5, 0x38, 0xbf, 0x40, 0xa3, 0x9e, 0x81, 0xf3, 0xd7, 0xfb,
     0x7c, 0xe3, 0x39, 0x82, 0x9b, 0x2f, 0xff, 0x87, 0x34, 0x8e, 0x43, 0x44, 0xc4, 0xde, 0xe9, 0xcb,
     0x54, 0x7b, 0x94, 0x32, 0xa6, 0xc2, 0x23, 0x3d, 0xee, 0x4c, 0x95, 0x0b, 0x42, 0xfa, 0xc3, 0x4e,
@@ -58,7 +58,7 @@ unsigned char inv_sbox[256] = {
     0x17, 0x2b, 0x04, 0x7e, 0xba, 0x77, 0xd6, 0x26, 0xe1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0c, 0x7d
 };
 
-void printMatrix(unsigned char * state) {
+void printMatrix(unsigned short * state) {
     int i;
     for (i = 0; i < 16; i++) {
         printf("%02x ", state[i]);
@@ -68,7 +68,7 @@ void printMatrix(unsigned char * state) {
     }
 }
 
-void printBinary(unsigned char n, int size) {
+void printBinary(unsigned short n, int size) {
     int i;
     for (i = size-1; i >= 0; i--) {
         printf("%d", (n >> i) & 1);
@@ -76,7 +76,7 @@ void printBinary(unsigned char n, int size) {
     printf("\n");
 }
 
-void shiftSubRows(unsigned char * state) {
+void shiftSubRows(unsigned short * state) {
     /*
         Shifts the rows of the state matrix
         Row 0: No shift
@@ -84,7 +84,7 @@ void shiftSubRows(unsigned char * state) {
         Row 2: 2 shift (left)
         Row 3: 3 shift (left)
     */
-    unsigned char temp[16];
+    unsigned short temp[16];
     int i;
 
     // Copy state into temp
@@ -109,7 +109,7 @@ void shiftSubRows(unsigned char * state) {
     state[15] = temp[14];
 }
 
-void inverse_shiftSubRows(unsigned char * state) {
+void inverse_shiftSubRows(unsigned short * state) {
     /*
         Shifts the rows of the state matrix
         Row 0: No shift
@@ -117,7 +117,7 @@ void inverse_shiftSubRows(unsigned char * state) {
         Row 2: 2 shift (right)
         Row 3: 3 shift (right)
     */
-    unsigned char temp[16];
+    unsigned short temp[16];
     int i;
 
     // Copy state into temp
@@ -142,7 +142,7 @@ void inverse_shiftSubRows(unsigned char * state) {
     state[15] = temp[12];
 }
 
-void subBytes(unsigned char * state) {
+void subBytes(unsigned short * state) {
     /*
         Substitutes each byte of the state matrix with the corresponding byte in the S-Box
     */
@@ -152,7 +152,7 @@ void subBytes(unsigned char * state) {
     }
 }
 
-void inverse_subBytes(unsigned char * state) {
+void inverse_subBytes(unsigned short * state) {
     /*
         Substitutes each byte of the state matrix with the corresponding byte in the inverse S-Box
     */
@@ -162,22 +162,22 @@ void inverse_subBytes(unsigned char * state) {
     }
 }
 
-unsigned char g(unsigned char a) {
+unsigned short g(unsigned short a) {
     /*
         Keeps number within Galois Field
     */
-    unsigned char hi_bit_set = (a & 0x80);
+    unsigned short hi_bit_set = (a & 0x100);
 
     // if the high bit is set, xor with 0x1b
-    if (hi_bit_set == 0x80) {
+    if (hi_bit_set == 0x100) {
         a = a ^ 0x11b;
     }
 
     return a;
 }
 
-void mixColumns(unsigned char * state) {
-    unsigned char * temp = malloc(16);
+void mixColumns(unsigned short * state) {
+    unsigned short * temp = malloc(16);
     int i;
     int a, b, c, d;
 
@@ -198,7 +198,7 @@ void mixColumns(unsigned char * state) {
         d = i+12;
 
         // ~ = 2, 3, 1, 1
-        temp[a] = (unsigned char) (
+        temp[a] = (unsigned short) (
             g(state[a] << 1)
             ^
             (g(state[b] << 1) ^ state[b])
@@ -208,7 +208,7 @@ void mixColumns(unsigned char * state) {
             (state[d])
         );
         // ~ = 1, 2, 3, 1
-        temp[b] = (unsigned char) (
+        temp[b] = (unsigned short) (
             (state[a])
             ^
             g(state[b] << 1)
@@ -218,7 +218,7 @@ void mixColumns(unsigned char * state) {
             (state[d])
         );
         // ~ = 1, 1, 2, 3
-        temp[c] = (unsigned char) (
+        temp[c] = (unsigned short) (
             (state[a])
             ^
             (state[b])
@@ -228,7 +228,7 @@ void mixColumns(unsigned char * state) {
             (g(state[d] << 1) ^ state[d])
         );
         // ~ = 3, 1, 1, 2
-        temp[d] = (unsigned char) (
+        temp[d] = (unsigned short) (
             (g(state[a] << 1) ^ state[a])
             ^
             (state[b])
@@ -247,8 +247,8 @@ void mixColumns(unsigned char * state) {
     free(temp);
 }
 
-void inverse_mixColumns(unsigned char * state) {
-    unsigned char * temp = malloc(16);
+void inverse_mixColumns(unsigned short * state) {
+    unsigned short * temp = malloc(16);
     int i;
     int j;
 
@@ -260,7 +260,7 @@ void inverse_mixColumns(unsigned char * state) {
     for (i = 0; i < 4; i++) {
         j = i * 4;
         // ~ = 14, 11, 13, 9
-        temp[j] = (unsigned char) (
+        temp[j] = (unsigned short) (
             // 14 * a0
             ((state[j] << 3) + (state[j] << 2) + (state[j] << 1) + state[j])
             ^
@@ -273,7 +273,7 @@ void inverse_mixColumns(unsigned char * state) {
             // 9 * a3
             ((state[j+3] << 3) + state[j+3]));
         // ~ = 9, 14, 11, 13
-        temp[j+1] = (unsigned char) (
+        temp[j+1] = (unsigned short) (
             // 9 * a0
             ((state[j] << 3) + state[j])
             ^
@@ -286,7 +286,7 @@ void inverse_mixColumns(unsigned char * state) {
             // 13 * a3
             ((state[j+3] << 3) + (state[j+3] << 2) + state[j+3]));
         // ~ = 13, 9, 14, 11
-        temp[j+2] = (unsigned char) (
+        temp[j+2] = (unsigned short) (
             // 13 * a0
             ((state[j] << 3) + (state[j] << 2) + state[j])
             ^
@@ -299,7 +299,7 @@ void inverse_mixColumns(unsigned char * state) {
             // 11 * a3
             ((state[j+3] << 3) + (state[j+3] << 1) + state[j+3]));
         // ~ = 11, 13, 9, 14
-        temp[j+3] = (unsigned char) (
+        temp[j+3] = (unsigned short) (
             // 11 * a0
             ((state[j] << 3) + (state[j] << 1) + state[j])
             ^
@@ -322,7 +322,7 @@ void inverse_mixColumns(unsigned char * state) {
 
 
 int main() {
-    unsigned char a[16] = {
+    unsigned short a[16] = {
         0x87, 0xF2, 0x4D, 0x97, 
         0x6E, 0x4C, 0x90, 0xEC, 
         0x46, 0xE7, 0x4A, 0xC3, 
@@ -357,8 +357,8 @@ int main() {
     //printMatrix(a);
 
     /*
-    unsigned char d;
-    unsigned char e;
+    unsigned short d;
+    unsigned short e;
     for (int i = 128; i < 256; i++) {
         d = 0x02 * i;
         e = (0x02 * i) ^ 0;
@@ -368,18 +368,18 @@ int main() {
 
     // https://crypto.stackexchange.com/questions/2402/how-to-solve-mixcolumns
 
-    unsigned char e = 0xBF;
-    unsigned char f = g(e << 1 ^ e);
-    unsigned char f2 = g(e << 1) ^ e; // wrong!
+    unsigned short e = 0xBF;
+    unsigned short f = g(e << 1 ^ e);
+    unsigned short f2 = g(e << 1) ^ e; // wrong!
 
     printf("f : 0xBF * 3 in GF(2^8)  = ");
     printBinary(f, 8);
     printf("f2: 0xBF * 3 in GF(2^8) != ");
     printBinary(f2, 8);
 
-    unsigned char k = 0xF2;
-    unsigned char l = g(k << 1) ^ k;
-    unsigned char l2 = g(k << 1 ^ k); // wrong!
+    unsigned short k = 0xF2;
+    unsigned short l = g(k << 1) ^ k;
+    unsigned short l2 = g(k << 1 ^ k); // wrong!
 
     printf("l : 0xF2 * 3 in GF(2^8)  = ");
     printBinary(l, 8);
