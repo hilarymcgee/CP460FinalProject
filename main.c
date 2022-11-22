@@ -339,6 +339,7 @@ int main() {
 
     printf("After:\n");
     printMatrix(a);
+    printf("\n");
 
     /*
         Expected Output of a:
@@ -365,19 +366,28 @@ int main() {
     }
     */
 
-    unsigned char e = 0xBF;
-    unsigned char f = (g(e << 1) ^ e);
-
     // https://crypto.stackexchange.com/questions/2402/how-to-solve-mixcolumns
 
-    // The way I am multiplying by 3 is wrong but I don't know how to fix it
-    // f: should come out as 1c1 or 111000001 but is missing its most significant bit causing the output to be wrong
+    unsigned char e = 0xBF;
+    unsigned char f = g(e << 1 ^ e);
+    unsigned char f2 = g(e << 1) ^ e; // wrong!
 
+    printf("f : 0xBF * 3 in GF(2^8)  = ");
+    printBinary(f, 8);
+    printf("f2: 0xBF * 3 in GF(2^8) != ");
+    printBinary(f2, 8);
 
-    printf("\n%02x\n", f);
+    unsigned char k = 0xF2;
+    unsigned char l = g(k << 1) ^ k;
+    unsigned char l2 = g(k << 1 ^ k); // wrong!
 
-    printf("f: ");
-    printBinary(f, 9);
+    printf("l : 0xF2 * 3 in GF(2^8)  = ");
+    printBinary(l, 8);
+    printf("l2: 0xF2 * 3 in GF(2^8) != ");
+    printBinary(l2, 8);
+
+    // Notice the bracket change between the two, but the result of the multiplication only correct when the brackets are there *sometimes and sometimes correct when not there.
+    // fml
 
     return 0;
 }
