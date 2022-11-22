@@ -248,7 +248,6 @@ void mixColumns(unsigned short * state) {
 }
 
 void inverse_mixColumns(unsigned short * state) {
-// HILARY'S STOP WORKING ON IT FULLERTON!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     unsigned short * temp = malloc(16);
     int i;
     int a, b, c, d;
@@ -331,6 +330,7 @@ unsigned char mul_14[] =
     0x37,0x39,0x2b,0x25,0x0f,0x01,0x13,0x1d,0x47,0x49,0x5b,0x55,0x7f,0x71,0x63,0x6d,
     0xd7,0xd9,0xcb,0xc5,0xef,0xe1,0xf3,0xfd,0xa7,0xa9,0xbb,0xb5,0x9f,0x91,0x83,0x8d
 };
+
 void AESencrypt() {
 }
 
@@ -375,12 +375,11 @@ int main() {
 
 
     // loop 0 -> 256
-    for (int i = 0; i < 256; i++) {
-        unsigned short e = mul_14[i];
-        unsigned short e1, e2, e3, e4;
+    for (int i = 60; i < 80; i++) {
+        unsigned short e = i;
 
         //e * 14
-        e = g(e << 3) ^ g(e << 2) ^ g(e << 1) ^ e;
+        e = g(e << 3) ^ g(e << 2) ^ g(e << 1);
         
         printf("%d - %03x - %03x\n", i, e, mul_14[i]);
     }
