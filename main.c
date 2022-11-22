@@ -248,6 +248,7 @@ void mixColumns(unsigned short * state) {
 }
 
 void inverse_mixColumns(unsigned short * state) {
+// HILARY'S STOP WORKING ON IT FULLERTON!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     unsigned short * temp = malloc(16);
     int i;
     int a, b, c, d;
@@ -309,6 +310,12 @@ void inverse_mixColumns(unsigned short * state) {
         state[i] = temp[i];
     }
     free(temp);
+}
+
+void AESencrypt() {
+}
+
+void AESdecrypt() {
 }
 
 
