@@ -373,6 +373,7 @@ int main() {
     printMatrix(a);
     printf("\n");
 
+    printf("i  - wrg - correct\n"); 
 
     // loop 0 -> 256
     for (int i = 60; i < 80; i++) {
