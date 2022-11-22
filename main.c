@@ -173,12 +173,6 @@ unsigned short g(unsigned short a) {
         a = a ^ 0x11b;
     }
 
-    if (a > 0xff) {
-        //printf("Error: g(%02x) > 0xff", a);
-        a = (a ^ 0x11b) & 0xff;
-        //printf(" -> %02x\n", a);
-    }
-
     return a;
 }
 
