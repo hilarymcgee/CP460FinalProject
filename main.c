@@ -166,10 +166,9 @@ unsigned short g(unsigned short a) {
     /*
         Keeps number within Galois Field
     */
-    unsigned short hi_bit_set = (a & 0x100);
 
-    // if the high bit is set, xor with 0x1b
-    if (hi_bit_set == 0x100) {
+    // if the high bit (8) is set, xor with 0x1b
+    if ((a & 0x100) == 0x100) {
         a = a ^ 0x11b;
     }
 
@@ -255,7 +254,7 @@ void inverse_mixColumns(unsigned short * state) {
     // * 9 == << 3 + original
     // * 11 == << 3 + << 1 + original
     // * 13 == << 3 + << 2 + original
-    // * 14 == << 3 + << 2 + << 1 + original
+    // * 14 == << 3 + << 2 + << 1
 
     for (i = 0; i < 4; i++) {
         a = i;
@@ -265,43 +264,43 @@ void inverse_mixColumns(unsigned short * state) {
 
         // ~ = 14, 11, 13, 9
         temp[a] = (unsigned short) (
-            (g(state[a] << 3) ^ g(state[a] << 2) ^ g(state[a] << 1) ^ state[a])
+            (g(g(g(state[a] << 1) << 1) << 1) ^ g(g(state[a] << 1) << 1) ^ g(state[a] << 1))
             ^
-            (g(state[b] << 3) ^ g(state[b] >> 1) ^ state[b])
+            (g(g(g(state[b] << 1) << 1) << 1) ^ g(state[b] << 1) ^ state[b])
             ^
-            (g(state[c] << 3) ^ g(state[c] << 2) ^ state[c])
+            (g(g(g(state[c] << 1) << 1) << 1) ^ g(g(state[c] << 1) << 1) ^ state[c])
             ^
-            (g(state[d] << 3) ^ state[d])
+            (g(g(g(state[d] << 1) << 1) << 1) ^ state[d])
         );
         // ~ = 9, 14, 11, 13
         temp[b] = (unsigned short) (
-            (g(state[a] << 3) ^ state[a])
+            (g(g(g(state[a] << 1) << 1) << 1) ^ state[a])
             ^
-            (g(state[b] << 3) ^ g(state[b] << 2) ^ g(state[b] << 1) ^ state[b])
+            (g(g(g(state[b] << 1) << 1) << 1) ^ g(g(state[b] << 1) << 1) ^ g(state[b] << 1))
             ^
-            (g(state[c] << 3) ^ g(state[c] >> 1) ^ state[c])
+            (g(g(g(state[c] << 1) << 1) << 1) ^ g(state[c] << 1) ^ state[c])
             ^
-            (g(state[d] << 3) ^ g(state[d] << 2) ^ state[d])
+            (g(g(g(state[d] << 1) << 1) << 1) ^ g(g(state[d] << 1) << 1) ^ state[d])
         );
         // ~ = 13, 9, 14, 11
         temp[c] = (unsigned short) (
-            (g(state[a] << 3) ^ g(state[a] << 2) ^ state[a])
+            (g(g(g(state[a] << 1) << 1) << 1) ^ g(g(state[a] << 1) << 1) ^ state[a])
             ^
-            (g(state[b] << 3) ^ state[b])
+            (g(g(g(state[b] << 1) << 1) << 1) ^ state[b])
             ^
-            (g(state[c] << 3) ^ g(state[c] << 2) ^ g(state[c] << 1) ^ state[c])
+            (g(g(g(state[c] << 1) << 1) << 1) ^ g(g(state[c] << 1) << 1) ^ g(state[c] << 1))
             ^
-            (g(state[d] << 3) ^ g(state[d] >> 1) ^ state[d])
+            (g(g(g(state[d] << 1) << 1) << 1) ^ g(state[d] << 1) ^ state[d])
         );
         // ~ = 11, 13, 9, 14
         temp[d] = (unsigned short) (
-            (g(state[a] << 3) ^ g(state[a] >> 1) ^ state[a])
+            (g(g(g(state[a] << 1) << 1) << 1) ^ g(state[a] << 1) ^ state[a])
             ^
-            (g(state[b] << 3) ^ g(state[b] << 2) ^ state[b])
+            (g(g(g(state[b] << 1) << 1) << 1) ^ g(g(state[b] << 1) << 1) ^ state[b])
             ^
-            (g(state[c] << 3) ^ state[c])
+            (g(g(g(state[c] << 1) << 1) << 1) ^ state[c])
             ^
-            (g(state[d] << 3) ^ g(state[d] << 2) ^ g(state[d] << 1) ^ state[d])
+            (g(g(g(state[d] << 1) << 1) << 1) ^ g(g(state[d] << 1) << 1) ^ g(state[d] << 1))
         );
     }
 
@@ -373,17 +372,17 @@ int main() {
     printMatrix(a);
     printf("\n");
 
-    printf("i  - wrg - correct\n"); 
+    //printf("i  - wrg - correct\n"); 
 
     // loop 0 -> 256
-    for (int i = 60; i < 80; i++) {
+    /*for (int i = 60; i < 80; i++) {
         unsigned short e = i;
 
         //e * 14
-        e = g(e << 3) ^ g(e << 2) ^ g(e << 1);
+        e = g(g(g(e << 1) << 1) << 1) ^ g(g(e << 1) << 1) ^ g(e << 1);
         
         printf("%d - %03x - %03x\n", i, e, mul_14[i]);
-    }
+    }*/
 
     return 0;
 }
