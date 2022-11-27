@@ -68,6 +68,13 @@ void printMatrix(unsigned char * state) {
     }
 }
 
+void printMatrixAsText(unsigned char * state) {
+    int i;
+    for (i = 0; i < 16; i++) {
+        printf("%c", state[i]);
+    }
+}
+
 void printBinary(unsigned char n, int size) {
     int i;
     for (i = size-1; i >= 0; i--) {
@@ -172,7 +179,7 @@ unsigned char g(unsigned char a) {
         a = a ^ 0x1b;
     }
 
-    a << 1;
+    a = a << 1;
 
     return a;
 }
@@ -312,12 +319,12 @@ void inverse_mixColumns(unsigned char * state) {
     free(temp);
 }
 
-void KeyExpansionHeart(unsigned short * state) {
+void KeyExpansionHeart(unsigned char * state) {
     //Rotate left:
     //unsigned int * q = (unsigned int *)state;
     //* q = (* q >> 8) | ((* q & 0xff) << 24);
 
-    unsigned short temp = state[0];
+    unsigned char temp = state[0];
     state[0] = state[1];
     state[1] = state[2];
     state[2] = state[3];
@@ -329,23 +336,6 @@ void KeyExpansionHeart(unsigned short * state) {
     state[2] = sbox[state[2]];
     state[3] = sbox[state[3]];
 };
-
-void KeyExpansion(unsigned char * key[16], unsigned char * expandKey[176]) {
-    //the first 16 bytes are the original key:
-    for (int i = 0; i < 16; i++) {
-        expandKey[i] = key[i];
-    }
-
-    int bytesGenerated = 16; //generate 16 bytes so far
-    int i = 1; //iteration begins at 1
-    unsigned char temp[4]; //temp storage
-}
-
-void AESencrypt() {
-}
-
-void AESdecrypt() {
-}
 
 unsigned char rcon(unsigned char in) {
         unsigned char c=1;
@@ -368,12 +358,126 @@ unsigned char rcon(unsigned char in) {
         return c;
 }
 
+
+void KeyExpansion(unsigned char * key[16], unsigned char * expandKey[176]) {
+    //the first 16 bytes are the original key:
+    for (int i = 0; i < 16; i++) {
+        expandKey[i] = key[i];
+    }
+
+    int bytesGenerated = 16; //generate 16 bytes so far
+    int i = 1; //iteration begins at 1
+    unsigned char temp[4]; //temp storage
+
+    while (bytesGenerated < 176) {
+        //Read 4 bytes for the "temp" storage
+        for (int j = 0; j < 4; j++) {
+            temp[j] = *expandKey[bytesGenerated - 4 + j];
+        }
+
+        //Perform the core once for each 16 byte key
+        if (bytesGenerated % 16 == 0) {
+            KeyExpansionHeart(temp);
+            temp[0] = temp[0] ^ rcon(i);
+            i++;
+        }
+
+        //XOR temp with [bytesGenerated-16], and store in expandKey
+        for (int j = 0; j < 4; j++) {
+            expandKey[bytesGenerated] = (unsigned char) (*expandKey[bytesGenerated - 16] ^ temp[j]);
+            bytesGenerated++;
+        }
+    }
+}
+
+// define addRoundKey
+void addRoundKey(unsigned char * state, unsigned char * roundKey) {
+    int i;
+    for (i = 0; i < 16; i++) {
+        state[i] ^= roundKey[i];
+    }
+}
+
+
+void AESencrypt(unsigned char * message, unsigned char * key) {
+    unsigned char * state = malloc(16);
+    unsigned char * expandKey = malloc(176);
+    int i;
+
+    KeyExpansion(key, expandKey);
+
+    for (i = 0; i < 16; i++) {
+        state[i] = message[i];
+    }
+
+    addRoundKey(state, key);
+
+    for (i = 0; i < 9; i++) {
+        subBytes(state);
+        shiftSubRows(state);
+        mixColumns(state);
+        addRoundKey(state, expandKey + (16 * (i + 1)));
+    }
+
+    subBytes(state);
+    shiftSubRows(state);
+    addRoundKey(state, expandKey + 160);
+
+    for (i = 0; i < 16; i++) {
+        message[i] = state[i];
+    }
+
+    free(state);
+    free(expandKey);
+}
+
+void AESdecrypt(unsigned char * message, unsigned char * key) {
+    unsigned char * state = malloc(16);
+    unsigned char * expandKey = malloc(176);
+    int i;
+
+    KeyExpansion(key, expandKey);
+
+    for (i = 0; i < 16; i++) {
+        state[i] = message[i];
+    }
+
+    addRoundKey(state, expandKey + 160);
+
+    for (i = 8; i >= 0; i--) {
+        inverse_shiftSubRows(state);
+        inverse_subBytes(state);
+        addRoundKey(state, expandKey + (16 * (i + 1)));
+        inverse_mixColumns(state);
+    }
+
+    inverse_shiftSubRows(state);
+    inverse_subBytes(state);
+    addRoundKey(state, key);
+
+    for (i = 0; i < 16; i++) {
+        message[i] = state[i];
+    }
+
+    free(state);
+    free(expandKey);
+}
+
 int main() {
     unsigned char a[16] = {
         0x87, 0xF2, 0x4D, 0x97, 
         0x6E, 0x4C, 0x90, 0xEC, 
         0x46, 0xE7, 0x4A, 0xC3, 
         0xA6, 0x8C, 0xD8, 0x95
+    };
+
+    // Testing data in 128-bit block
+    // pink car blue car green car
+    unsigned char b[16] = {
+        0x70, 0x69, 0x6E, 0x6B, 
+        0x20, 0x63, 0x61, 0x72, 
+        0x20, 0x62, 0x6C, 0x75, 
+        0x65, 0x20, 0x63, 0x61
     };
 
     /*
@@ -384,25 +488,19 @@ int main() {
         ED A5 A6 BC
     */
 
-    printf("\nBefore:\n");
-    printMatrix(a);
+    //print before matrix as text
+    printf("\nBefore as text:\n");
+    printMatrixAsText(a);
 
-    mixColumns(a);
-    //subBytes(a);
-    //shiftSubRows(a);
+    AESencrypt(a, b);
 
     printf("After:\n");
-    printMatrix(a);
+    printMatrixAsText(a);
 
-    
+    AESdecrypt(a, b);
 
-    inverse_mixColumns(a);
-    //inverse_subBytes(a);
-    //inverse_shiftSubRows(a);
-
-    printf("\nAfter inverse:\n");
-    printMatrix(a);
-    printf("\n");
+    printf("After decryption:\n");
+    printMatrixAsText(a);
 
     return 0;
 }
