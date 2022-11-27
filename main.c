@@ -247,8 +247,6 @@ void mixColumns(unsigned char * state) {
         );
     }
 
-    printf("\n");
-
     for (i = 0; i < 16; i++) {
         state[i] = temp[i];
     }
@@ -483,7 +481,7 @@ int main() {
 
     printf("\nBefore as text:\n");
     printBinaryAsText(a);
-    printf("\n");
+    printf("\n\n");
 
     AESencrypt(a, b);
 
