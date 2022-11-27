@@ -312,6 +312,35 @@ void inverse_mixColumns(unsigned char * state) {
     free(temp);
 }
 
+void KeyExpansionHeart(unsigned short * state) {
+    //Rotate left:
+    //unsigned int * q = (unsigned int *)state;
+    //* q = (* q >> 8) | ((* q & 0xff) << 24);
+
+    unsigned short temp = state[0];
+    state[0] = state[1];
+    state[1] = state[2];
+    state[2] = state[3];
+    state[4] = temp;
+
+    // S-box four bytes:
+    state[0] = sbox[state[0]];
+    state[1] = sbox[state[1]];
+    state[2] = sbox[state[2]];
+    state[3] = sbox[state[3]];
+};
+
+void KeyExpansion(unsigned char * key[16], unsigned char * expandKey[176]) {
+    //the first 16 bytes are the original key:
+    for (int i = 0; i < 16; i++) {
+        expandKey[i] = key[i];
+    }
+
+    int bytesGenerated = 16; //generate 16 bytes so far
+    int i = 1; //iteration begins at 1
+    unsigned char temp[4]; //temp storage
+}
+
 void AESencrypt() {
 }
 
