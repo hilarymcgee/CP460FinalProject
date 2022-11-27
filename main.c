@@ -483,18 +483,6 @@ void AESdecrypt(unsigned char * message, unsigned char * key) {
     free(expandKey);
 }
 
-unsigned char * convert_string_to_hex(char * input) {
-    /*
-        Convert string to hex of any size
-    */
-    unsigned char * output = malloc(strlen((const char *)input) / 2);
-    int i;
-    for (i = 0; i < strlen((const char *)input); i += 2) {
-        sscanf(input + i, "%2hhx", &output[i / 2]);
-    }
-    return output;
-}
-
 // split unsigned char array into 16 byte chunks
 unsigned char ** split_into_chunks(unsigned char * input, int chunk_size) {
     int i;
@@ -518,14 +506,7 @@ int main() {
     //     0x43, 0x61, 0x72, 0x20
     // };
 
-    unsigned char * a = convert_string_to_hex("pinkCar blueCar greenCar yellowCar blackCar whiteCar redCar orangeCar");
-
-    // print a
-    printf("a: ");
-    for (i = 0; i < 16; i++) {
-        printf("%c", a[i]);
-    }
-    printf("\n");
+    unsigned char a[70] = "pinkCar blueCar greenCar yellowCar blackCar whiteCar redCar orangeCar";
 
     //convert a into chunks
     unsigned char ** chunks = split_into_chunks(a, 16);
@@ -540,7 +521,7 @@ int main() {
 
     //print the before encryption string
     printf("Before encryption: ");
-    for (i = 0; i < sizeof(a) / 8; i++) {
+    for (i = 0; i < sizeof(a); i++) {
         printf("%c", a[i]);
     }
     printf("\n");
@@ -556,21 +537,38 @@ int main() {
     clock_t end_encryption = clock();
     double time_encryption = (double)(end_encryption - begin_encryption) / CLOCKS_PER_SEC;    
 
+    //convert chunks back into a
+    for (i = 0; i < strlen((const char *)a) / 16; i++) {
+        memcpy(a + (i * 16), chunks[i], 16);
+    }
+
+    //print the after encryption string
+    printf("After encryption: ");
+    for (i = 0; i < sizeof(a); i++) {
+        printf("%02x", a[i]);
+    }
+    printf("\n");
+
     clock_t begin_decryption = clock();
 
     // for each chunk, decrypt
     for (i = 0; i < strlen((const char *)a) / 16; i++) {
         AESdecrypt(chunks[i], key);
     }
-    
 
     clock_t end_decryption = clock();
     double time_decryption = (double)(end_decryption - begin_decryption) / CLOCKS_PER_SEC;
 
-    printf("After decryption as text:\n");
-    printBinaryAsText(a);
-    printf("After decryption as hex:\n");
-    printBinaryAsHex(a);
+    // merge chunks back into a
+    for (i = 0; i < strlen((const char *)a) / 16; i++) {
+        memcpy(a + (i * 16), chunks[i], 16);
+    }
+
+    //print the after encryption string
+    printf("After decryption: ");
+    for (i = 0; i < sizeof(a); i++) {
+        printf("%c", a[i]);
+    }
 
     printf("\n");
 
