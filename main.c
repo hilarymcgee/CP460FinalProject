@@ -330,6 +330,35 @@ unsigned char mul_14[] =
     0xd7,0xd9,0xcb,0xc5,0xef,0xe1,0xf3,0xfd,0xa7,0xa9,0xbb,0xb5,0x9f,0x91,0x83,0x8d
 };
 
+void KeyExpansionHeart(unsigned short * state) {
+    //Rotate left:
+    //unsigned int * q = (unsigned int *)state;
+    //* q = (* q >> 8) | ((* q & 0xff) << 24);
+
+    unsigned short temp = state[0];
+    state[0] = state[1];
+    state[1] = state[2];
+    state[2] = state[3];
+    state[4] = temp;
+
+    // S-box four bytes:
+    state[0] = s_box[state[0]];
+    state[1] = s_box[state[1]];
+    state[2] = s_box[state[2]];
+    state[3] = s_box[state[3]];
+};*/
+
+void KeyExpansion(unsigned char * input[16], unsigned char * expandKey[176]) {
+    //the first 16 bytes are the original key:
+    for int(i = 0; i < 16; i++) {
+        expandKey[i] = inputKey[i];
+    }
+
+    int bytesGenerated = 16; //generate 16 bytes so far
+    int i = 1; //iteration begins at 1
+    unsigned char temp[4]; //temp storage
+}
+
 void AESencrypt() {
 }
 
