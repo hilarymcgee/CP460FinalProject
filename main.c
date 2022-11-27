@@ -1,5 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
+#include <string.h>
 
 /*
 Functions:
@@ -73,12 +75,32 @@ void printBinaryAsText(unsigned char * state) {
     for (i = 0; i < 16; i++) {
         printf("%c", state[i]);
     }
+    printf("\n\n");
+}
+
+void printBinaryAsHex(unsigned char * state) {
+    int i;
+    for (i = 0; i < 16; i++) {
+        printf("%02x", state[i]);
+    }
+    printf("\n\n");
 }
 
 void printBinary(unsigned char n, int size) {
     int i;
     for (i = size-1; i >= 0; i--) {
         printf("%d", (n >> i) & 1);
+    }
+    printf("\n");
+}
+
+void printHexChunks(unsigned char * state) {
+    int i;
+    for (i = 0; i < 16; i++) {
+        printf("%02x ", state[i]);
+        if (i % 4 == 3) {
+            printf("\n");
+        }
     }
     printf("\n");
 }
@@ -461,39 +483,99 @@ void AESdecrypt(unsigned char * message, unsigned char * key) {
     free(expandKey);
 }
 
+unsigned char * convert_string_to_hex(char * input) {
+    /*
+        Convert string to hex of any size
+    */
+    unsigned char * output = malloc(strlen((const char *)input) / 2);
+    int i;
+    for (i = 0; i < strlen((const char *)input); i += 2) {
+        sscanf(input + i, "%2hhx", &output[i / 2]);
+    }
+    return output;
+}
+
+// split unsigned char array into 16 byte chunks
+unsigned char ** split_into_chunks(unsigned char * input, int chunk_size) {
+    int i;
+    int num_chunks = strlen((const char *) input) / chunk_size;
+    unsigned char ** output = malloc(num_chunks * sizeof(unsigned char *));
+    for (i = 0; i < num_chunks; i++) {
+        output[i] = malloc(chunk_size);
+        memcpy(output[i], input + (i * chunk_size), chunk_size);
+    }
+    return output;
+}
+
 int main() {
+    int i;
     // Testing data in 128-bit block
     // pinkCar blueCar
-    unsigned char a[16] = {
-        0x70, 0x69, 0x6e, 0x6b,
-        0x43, 0x61, 0x72, 0x20,
-        0x62, 0x6c, 0x75, 0x65,
-        0x43, 0x61, 0x72, 0x20
-    };
+    // unsigned char a[16] = {
+    //     0x70, 0x69, 0x6e, 0x6b,
+    //     0x43, 0x61, 0x72, 0x20,
+    //     0x62, 0x6c, 0x75, 0x65,
+    //     0x43, 0x61, 0x72, 0x20
+    // };
+
+    unsigned char * a = convert_string_to_hex("pinkCar blueCar greenCar yellowCar blackCar whiteCar redCar orangeCar");
+
+    // print a
+    printf("a: ");
+    for (i = 0; i < 16; i++) {
+        printf("%c", a[i]);
+    }
+    printf("\n");
+
+    //convert a into chunks
+    unsigned char ** chunks = split_into_chunks(a, 16);
 
     // 128-bit key
-    unsigned char b[16] = {
+    unsigned char key[16] = {
         0x2B, 0x7E, 0x15, 0x16, 
         0x28, 0xAE, 0xD2, 0xA6, 
         0xAB, 0xF7, 0x15, 0x88, 
         0x09, 0xCF, 0x4F, 0x3C
     };
 
-    printf("\nBefore as text:\n");
-    printBinaryAsText(a);
-    printf("\n\n");
-
-    AESencrypt(a, b);
-
-    printf("After:\n");
-    printBinaryAsText(a);
+    //print the before encryption string
+    printf("Before encryption: ");
+    for (i = 0; i < sizeof(a) / 8; i++) {
+        printf("%c", a[i]);
+    }
     printf("\n");
 
-    AESdecrypt(a, b);
 
-    printf("After decryption:\n");
+    clock_t begin_encryption = clock();
+
+    // for each chunk, encrypt
+    for (i = 0; i < strlen((const char *)a) / 16; i++) {
+        AESencrypt(chunks[i], key);
+    }
+
+    clock_t end_encryption = clock();
+    double time_encryption = (double)(end_encryption - begin_encryption) / CLOCKS_PER_SEC;    
+
+    clock_t begin_decryption = clock();
+
+    // for each chunk, decrypt
+    for (i = 0; i < strlen((const char *)a) / 16; i++) {
+        AESdecrypt(chunks[i], key);
+    }
+    
+
+    clock_t end_decryption = clock();
+    double time_decryption = (double)(end_decryption - begin_decryption) / CLOCKS_PER_SEC;
+
+    printf("After decryption as text:\n");
     printBinaryAsText(a);
+    printf("After decryption as hex:\n");
+    printBinaryAsHex(a);
+
     printf("\n");
+
+    printf("Encryption time: %f seconds\n", time_encryption);
+    printf("Decryption time: %f seconds\n", time_decryption);
 
     return 0;
 }
