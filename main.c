@@ -68,7 +68,7 @@ void printMatrix(unsigned char * state) {
     }
 }
 
-void printMatrixAsText(unsigned char * state) {
+void printBinaryAsText(unsigned char * state) {
     int i;
     for (i = 0; i < 16; i++) {
         printf("%c", state[i]);
@@ -359,7 +359,7 @@ unsigned char rcon(unsigned char in) {
 }
 
 
-void KeyExpansion(unsigned char * key[16], unsigned char * expandKey[176]) {
+void KeyExpansion(unsigned char * key, unsigned char * expandKey) {
     //the first 16 bytes are the original key:
     for (int i = 0; i < 16; i++) {
         expandKey[i] = key[i];
@@ -372,7 +372,7 @@ void KeyExpansion(unsigned char * key[16], unsigned char * expandKey[176]) {
     while (bytesGenerated < 176) {
         //Read 4 bytes for the "temp" storage
         for (int j = 0; j < 4; j++) {
-            temp[j] = *expandKey[bytesGenerated - 4 + j];
+            temp[j] = expandKey[bytesGenerated - 4 + j];
         }
 
         //Perform the core once for each 16 byte key
@@ -384,7 +384,7 @@ void KeyExpansion(unsigned char * key[16], unsigned char * expandKey[176]) {
 
         //XOR temp with [bytesGenerated-16], and store in expandKey
         for (int j = 0; j < 4; j++) {
-            expandKey[bytesGenerated] = (unsigned char) (*expandKey[bytesGenerated - 16] ^ temp[j]);
+            expandKey[bytesGenerated] = expandKey[bytesGenerated - 16] ^ temp[j];
             bytesGenerated++;
         }
     }
@@ -464,43 +464,38 @@ void AESdecrypt(unsigned char * message, unsigned char * key) {
 }
 
 int main() {
-    unsigned char a[16] = {
-        0x87, 0xF2, 0x4D, 0x97, 
-        0x6E, 0x4C, 0x90, 0xEC, 
-        0x46, 0xE7, 0x4A, 0xC3, 
-        0xA6, 0x8C, 0xD8, 0x95
-    };
-
     // Testing data in 128-bit block
-    // pink car blue car green car
-    unsigned char b[16] = {
-        0x70, 0x69, 0x6E, 0x6B, 
-        0x20, 0x63, 0x61, 0x72, 
-        0x20, 0x62, 0x6C, 0x75, 
-        0x65, 0x20, 0x63, 0x61
+    // pinkCar blueCar
+    unsigned char a[16] = {
+        0x70, 0x69, 0x6e, 0x6b,
+        0x43, 0x61, 0x72, 0x20,
+        0x62, 0x6c, 0x75, 0x65,
+        0x43, 0x61, 0x72, 0x20
     };
 
-    /*
-        Expected mixColumns Output of a:
-        47 40 A3 4C
-        37 D4 70 9F
-        94 E4 3A 42
-        ED A5 A6 BC
-    */
+    // 128-bit key
+    unsigned char b[16] = {
+        0x2B, 0x7E, 0x15, 0x16, 
+        0x28, 0xAE, 0xD2, 0xA6, 
+        0xAB, 0xF7, 0x15, 0x88, 
+        0x09, 0xCF, 0x4F, 0x3C
+    };
 
-    //print before matrix as text
     printf("\nBefore as text:\n");
-    printMatrixAsText(a);
+    printBinaryAsText(a);
+    printf("\n");
 
     AESencrypt(a, b);
 
     printf("After:\n");
-    printMatrixAsText(a);
+    printBinaryAsText(a);
+    printf("\n");
 
     AESdecrypt(a, b);
 
     printf("After decryption:\n");
-    printMatrixAsText(a);
+    printBinaryAsText(a);
+    printf("\n");
 
     return 0;
 }
