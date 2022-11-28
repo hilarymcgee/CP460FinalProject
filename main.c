@@ -378,7 +378,6 @@ unsigned char rcon(unsigned char in) {
         return c;
 }
 
-
 void KeyExpansion(unsigned char * key, unsigned char * expandKey) {
     //the first 16 bytes are the original key:
     for (int i = 0; i < 16; i++) {
@@ -410,7 +409,6 @@ void KeyExpansion(unsigned char * key, unsigned char * expandKey) {
     }
 }
 
-// define addRoundKey
 void addRoundKey(unsigned char * state, unsigned char * roundKey) {
     int i;
     for (i = 0; i < 16; i++) {
@@ -418,8 +416,7 @@ void addRoundKey(unsigned char * state, unsigned char * roundKey) {
     }
 }
 
-
-void AESencrypt(unsigned char * message, unsigned char * key) {
+void AES_Single_Block_Encrypt(unsigned char * message, unsigned char * key) {
     unsigned char * state = malloc(16);
     unsigned char * expandKey = malloc(176);
     int i;
@@ -451,7 +448,7 @@ void AESencrypt(unsigned char * message, unsigned char * key) {
     free(expandKey);
 }
 
-void AESdecrypt(unsigned char * message, unsigned char * key) {
+void AES_Single_Block_Decrypt(unsigned char * message, unsigned char * key) {
     unsigned char * state = malloc(16);
     unsigned char * expandKey = malloc(176);
     int i;
@@ -486,14 +483,14 @@ void AESdecrypt(unsigned char * message, unsigned char * key) {
 void AES_MultiBlock_Encrypt_ECB(unsigned char * message, int blocks, unsigned char * key) {
     int i;
     for (i = 0; i < blocks; i++) {
-        AESencrypt(message + (i * 16), key);
+        AES_Single_Block_Encrypt(message + (i * 16), key);
     }
 }
 
 void AES_MultiBlock_Decrypt_ECB(unsigned char * message, int blocks, unsigned char * key) {
     int i;
     for (i = 0; i < blocks; i++) {
-        AESdecrypt(message + (i * 16), key);
+        AES_Single_Block_Decrypt(message + (i * 16), key);
     }
 }
 
@@ -506,7 +503,7 @@ void AES_MultiBlock_Encrypt_CBC(unsigned char * message, int blocks, unsigned ch
         temp[i] = message[i] ^ iv[i];
     }
     // encrypt current block
-    AESencrypt(temp, key);
+    AES_Single_Block_Encrypt(temp, key);
     // copy encrypted block to message
     memcpy(message, temp, 16);
 
@@ -517,7 +514,7 @@ void AES_MultiBlock_Encrypt_CBC(unsigned char * message, int blocks, unsigned ch
         }
 
         //Encrypt
-        AESencrypt(temp, key);
+        AES_Single_Block_Encrypt(temp, key);
 
         //Copy current block back to message
         memcpy(message + (i * 16), temp, 16);
@@ -536,7 +533,7 @@ void AES_MultiBlock_Decrypt_CBC(unsigned char * message, int blocks, unsigned ch
     // copy current block to temp
     memcpy(temp, message, 16);
     // decrypt
-    AESdecrypt(temp, key);
+    AES_Single_Block_Decrypt(temp, key);
     // xor with iv
     for (i = 0; i < 16; i++) {
         temp[i] ^= iv[i];
@@ -550,7 +547,7 @@ void AES_MultiBlock_Decrypt_CBC(unsigned char * message, int blocks, unsigned ch
         memcpy(temp, message + (i * 16), 16);
 
         //Decrypt
-        AESdecrypt(temp, key);
+        AES_Single_Block_Decrypt(temp, key);
 
         // xor temp with previous block
         int j;
@@ -565,18 +562,6 @@ void AES_MultiBlock_Decrypt_CBC(unsigned char * message, int blocks, unsigned ch
         memcpy(message + (i * 16), temp, 16);
     }
     free(temp);
-}
-
-// split unsigned char array into 16 byte chunks
-unsigned char ** split_into_chunks(unsigned char * input, int chunk_size) {
-    int i;
-    int num_chunks = strlen((const char *) input) / chunk_size;
-    unsigned char ** output = malloc(num_chunks * sizeof(unsigned char *));
-    for (i = 0; i < num_chunks; i++) {
-        output[i] = malloc(chunk_size);
-        memcpy(output[i], input + (i * chunk_size), chunk_size);
-    }
-    return output;
 }
 
 void test_AES_oneblock() {
@@ -595,7 +580,7 @@ void test_AES_oneblock() {
     }
     printf("\n");
 
-    AESencrypt(message, key);
+    AES_Single_Block_Encrypt(message, key);
 
     printf("Encrypted message: ");
     for (i = 0; i < message_len; i++) {
@@ -603,7 +588,7 @@ void test_AES_oneblock() {
     }
     printf("\n");
 
-    AESdecrypt(message, key);
+    AES_Single_Block_Decrypt(message, key);
 
     printf("Decrypted message: ");
     for (i = 0; i < message_len; i++) {
