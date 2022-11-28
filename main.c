@@ -483,6 +483,90 @@ void AESdecrypt(unsigned char * message, unsigned char * key) {
     free(expandKey);
 }
 
+void AES_MultiBlock_Encrypt_ECB(unsigned char * message, int blocks, unsigned char * key) {
+    int i;
+    for (i = 0; i < blocks; i++) {
+        AESencrypt(message + (i * 16), key);
+    }
+}
+
+void AES_MultiBlock_Decrypt_ECB(unsigned char * message, int blocks, unsigned char * key) {
+    int i;
+    for (i = 0; i < blocks; i++) {
+        AESdecrypt(message + (i * 16), key);
+    }
+}
+
+void AES_MultiBlock_Encrypt_CBC(unsigned char * message, int blocks, unsigned char * key, unsigned char * iv) {
+    int i;
+    unsigned char * temp = malloc(16); // temp acts as current block and previous block
+
+    // first block is special
+    for (i = 0; i < 16; i++) {
+        temp[i] = message[i] ^ iv[i];
+    }
+    // encrypt current block
+    AESencrypt(temp, key);
+    // copy encrypted block to message
+    memcpy(message, temp, 16);
+
+    for (i = 1; i < blocks; i++) {
+        // xor temp (previous block) with next block
+        for (int j = 0; j < 16; j++) {
+            temp[j] = message[(i * 16) + j] ^ temp[j];
+        }
+
+        //Encrypt
+        AESencrypt(temp, key);
+
+        //Copy current block back to message
+        memcpy(message + (i * 16), temp, 16);
+    }
+    free(temp);
+}
+
+void AES_MultiBlock_Decrypt_CBC(unsigned char * message, int blocks, unsigned char * key, unsigned char * iv) {
+    int i;
+    unsigned char * temp = malloc(16);
+    unsigned char * prev_block = malloc(16);
+
+    // -- first block is special -- //
+    // copy first block to prev_block
+    memcpy(prev_block, message, 16);
+    // copy current block to temp
+    memcpy(temp, message, 16);
+    // decrypt
+    AESdecrypt(temp, key);
+    // xor with iv
+    for (i = 0; i < 16; i++) {
+        temp[i] ^= iv[i];
+    }
+    // copy decrypted block back to message
+    memcpy(message, temp, 16);
+
+    // the rest of the blocks
+    for (i = 1; i < blocks; i++) {
+        // copy current block to temp
+        memcpy(temp, message + (i * 16), 16);
+
+        //Decrypt
+        AESdecrypt(temp, key);
+
+        // xor temp with previous block
+        int j;
+        for (j = 0; j < 16; j++) {
+            temp[j] ^= prev_block[j];
+        }
+
+        //update prev_block to current block
+        memcpy(prev_block, message + (i * 16), 16);
+
+        //Copy current block (temp) back to message
+        memcpy(message + (i * 16), temp, 16);
+    }
+    free(temp);
+}
+
 // split unsigned char array into 16 byte chunks
 unsigned char ** split_into_chunks(unsigned char * input, int chunk_size) {
     int i;
@@ -495,23 +579,137 @@ unsigned char ** split_into_chunks(unsigned char * input, int chunk_size) {
     return output;
 }
 
-int main() {
+void test_AES_oneblock() {
+    /*
+        Test AES encryption and decryption
+    */
+
     int i;
-    // Testing data in 128-bit block
-    // pinkCar blueCar
-    // unsigned char a[16] = {
-    //     0x70, 0x69, 0x6e, 0x6b,
-    //     0x43, 0x61, 0x72, 0x20,
-    //     0x62, 0x6c, 0x75, 0x65,
-    //     0x43, 0x61, 0x72, 0x20
-    // };
+    int message_len = 16;
+    unsigned char key[16] = "123456789abcdef";
+    unsigned char message[16] = "pink_fluffy78453";
+
+    printf(" Original message: ");
+    for (i = 0; i < message_len; i++) {
+        printf("%02x ", message[i]);
+    }
+    printf("\n");
+
+    AESencrypt(message, key);
+
+    printf("Encrypted message: ");
+    for (i = 0; i < message_len; i++) {
+        printf("%02x ", message[i]);
+    }
+    printf("\n");
+
+    AESdecrypt(message, key);
+
+    printf("Decrypted message: ");
+    for (i = 0; i < message_len; i++) {
+        printf("%02x ", message[i]);
+    }
+    printf("\n");
+}
+
+void test_AES_multiblock_ECB() {
+    /*
+        Test AES encryption and decryption
+    */
+
+    int i;
+    int message_len = 64; // 4 blocks
+    int chunk_size = 16;
+    int blocks = message_len / chunk_size;
+    unsigned char key[16] = "123456789abcdefg";
+    unsigned char message[64] = "1234567890123456123456789012345612345678901234561234567890123456";
+
+    printf(" Original message: ");
+    for (i = 0; i < message_len; i++) {
+        printf("%02x", message[i]);
+        if ((i + 1) % 16 == 0) {
+            printf(" ");
+        }
+    }
+    printf("\n");
+
+    AES_MultiBlock_Encrypt_ECB(message, blocks, key);
+
+    printf("Encrypted message: ");
+    for (i = 0; i < message_len; i++) {
+        printf("%02x", message[i]);
+        if ((i + 1) % 16 == 0) {
+            printf(" ");
+        }
+    }
+    printf("\n");
+
+    AES_MultiBlock_Decrypt_ECB(message, blocks, key);
+
+    printf("Decrypted message: ");
+    for (i = 0; i < message_len; i++) {
+        printf("%02x", message[i]);
+        if ((i + 1) % 16 == 0) {
+            printf(" ");
+        }
+    }
+    printf("\n");
+}
+
+void test_AES_multiblock_CBC() {
+    /*
+        Test AES encryption and decryption
+    */
+
+    int i;
+    int message_len = 64; // 4 blocks
+    int chunk_size = 16;
+    int blocks = message_len / chunk_size;
+    unsigned char key[16] = "123456789abcdefg";
+    unsigned char message[64] = "1234567890123456123456789012345612345678901234561234567890123456";
+    unsigned char iv[16] = "23456789abcdefg1";
+
+    printf(" Original message: ");
+    for (i = 0; i < message_len; i++) {
+        printf("%02x", message[i]);
+        if ((i + 1) % 16 == 0) {
+            printf(" ");
+        }
+    }
+    printf("\n");
+
+    AES_MultiBlock_Encrypt_CBC(message, blocks, key, iv);
+
+    printf("Encrypted message: ");
+    for (i = 0; i < message_len; i++) {
+        printf("%02x", message[i]);
+        if ((i + 1) % 16 == 0) {
+            printf(" ");
+        }
+    }
+    printf("\n");
+
+    AES_MultiBlock_Decrypt_CBC(message, blocks, key, iv);
+
+    printf("Decrypted message: ");
+    for (i = 0; i < message_len; i++) {
+        printf("%02x", message[i]);
+        if ((i + 1) % 16 == 0) {
+            printf(" ");
+        }
+    }
+    printf("\n");
+}
+
+void test_AES_multiblock_CBC_Bee_Movie() {
+    int i;
 
     // Read in data from file into unsigned char
     FILE *fp;
     fp = fopen("bee_movie_script.txt", "r");
     if (fp == NULL) {
         printf("Error opening file");
-        return 1;
+        return;
     }
 
     // determine length of file
@@ -520,30 +718,31 @@ int main() {
     // seek back to beginning of file
     fseek(fp, 0L, SEEK_SET);
 
-    // make size a multiple of 16 (not chopping off any data)
+    // make size a multiple of 128 bits (16 bytes) (not chopping off any data)
     int sz = text_sz + (text_sz % 16);
 
     unsigned char *data = malloc(sz);
     fread(data, sz, 1, fp);
     fclose(fp);
 
-    // print sz
-    printf("File Size: %d\n", sz);
+    unsigned char *decrypted_data = malloc(sz);
 
-    //convert buffer into chunks
-    unsigned char ** chunks = split_into_chunks(data, 16);
+    // print sz
+    printf("File Size: %d bits\n", sz);
 
     // 128-bit key
-    unsigned char key[16] = {
-        0x2B, 0x7E, 0x15, 0x16, 
-        0x28, 0xAE, 0xD2, 0xA6, 
-        0xAB, 0xF7, 0x15, 0x88, 
-        0x09, 0xCF, 0x4F, 0x3C
-    };
+    unsigned char key[16] = "123456789abcdefg";
+    unsigned char iv[16] = "23456789abcdefg1";
+    // unsigned char key[16] = {
+    //     0x2B, 0x7E, 0x15, 0x16, 
+    //     0x28, 0xAE, 0xD2, 0xA6, 
+    //     0xAB, 0xF7, 0x15, 0x88, 
+    //     0x09, 0xCF, 0x4F, 0x3C
+    // };
 
     //print the before encryption string
     printf("Before encryption: \n");
-    for (i = 0; i < text_sz / 32; i++) {
+    for (i = 0; i < text_sz / 128; i++) { // limit text printed in console (/ 32)
         printf("%02x", data[i]);
     }
     printf("\n\n");
@@ -551,44 +750,30 @@ int main() {
 
     clock_t begin_encryption = clock();
 
-    // for each chunk, encrypt
-    for (i = 0; i < strlen((const char *)data) / 16; i++) {
-        AESencrypt(chunks[i], key);
-    }
+    // encrypt
+    AES_MultiBlock_Encrypt_CBC(data, sz, key, iv);
 
     clock_t end_encryption = clock();
     double time_encryption = (double)(end_encryption - begin_encryption) / CLOCKS_PER_SEC;    
 
-    //convert chunks back into data
-    for (i = 0; i < strlen((const char *)data) / 16; i++) {
-        memcpy(data + (i * 16), chunks[i], 16);
-    }
-
     //print the after encryption string
-    printf("After encryption: ");
-    for (i = 0; i < sz / 32; i++) {
+    printf("After encryption: \n");
+    for (i = 0; i < sz / 128; i++) {
         printf("%02x", data[i]);
     }
     printf("\n\n");
 
     clock_t begin_decryption = clock();
 
-    // for each chunk, decrypt
-    for (i = 0; i < strlen((const char *)data) / 16; i++) {
-        AESdecrypt(chunks[i], key);
-    }
+    // decrypt
+    AES_MultiBlock_Decrypt_CBC(data, sz, key, iv);
 
     clock_t end_decryption = clock();
     double time_decryption = (double)(end_decryption - begin_decryption) / CLOCKS_PER_SEC;
 
-    // merge chunks back into a
-    for (i = 0; i < strlen((const char *)data) / 16; i++) {
-        memcpy(data + (i * 16), chunks[i], 16);
-    }
-
     //print the after encryption string
     printf("After decryption: \n");
-    for (i = 0; i < text_sz / 32; i++) {
+    for (i = 0; i < text_sz / 128; i++) {
         printf("%02x", data[i]);
     }
 
@@ -602,7 +787,7 @@ int main() {
     fp2 = fopen("bee_movie_script_encrypted.txt", "w");
     if (fp2 == NULL) {
         printf("Error opening file");
-        return 1;
+        return;
     }
     fwrite(data, text_sz, 1, fp2);
     fclose(fp2);
@@ -612,14 +797,20 @@ int main() {
     fp3 = fopen("bee_movie_script_decrypted.txt", "w");
     if (fp3 == NULL) {
         printf("Error opening file");
-        return 1;
+        return;
     }
-    fwrite(data, text_sz, 1, fp3);
+    fwrite(decrypted_data, text_sz, 1, fp3);
     fclose(fp3);
 
     // free memory
     free(data);
-    free(chunks);
+}
 
+int main() {
+    test_AES_multiblock_ECB();
+    printf("\n");
+    test_AES_multiblock_CBC();
+    printf("\n");
+    test_AES_multiblock_CBC_Bee_Movie();
     return 0;
 }
