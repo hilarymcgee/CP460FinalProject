@@ -506,10 +506,32 @@ int main() {
     //     0x43, 0x61, 0x72, 0x20
     // };
 
-    unsigned char a[70] = "pinkCar blueCar greenCar yellowCar blackCar whiteCar redCar orangeCar";
+    // Read in data from file into unsigned char
+    FILE *fp;
+    fp = fopen("bee_movie_script.txt", "r");
+    if (fp == NULL) {
+        printf("Error opening file");
+        return 1;
+    }
 
-    //convert a into chunks
-    unsigned char ** chunks = split_into_chunks(a, 16);
+    // determine length of file
+    fseek(fp, 0L, SEEK_END);
+    int text_sz = ftell(fp);
+    // seek back to beginning of file
+    fseek(fp, 0L, SEEK_SET);
+
+    // make size a multiple of 16 (not chopping off any data)
+    int sz = text_sz + (text_sz % 16);
+
+    unsigned char *data = malloc(sz);
+    fread(data, sz, 1, fp);
+    fclose(fp);
+
+    // print sz
+    printf("File Size: %d\n", sz);
+
+    //convert buffer into chunks
+    unsigned char ** chunks = split_into_chunks(data, 16);
 
     // 128-bit key
     unsigned char key[16] = {
@@ -520,39 +542,39 @@ int main() {
     };
 
     //print the before encryption string
-    printf("Before encryption: ");
-    for (i = 0; i < sizeof(a); i++) {
-        printf("%c", a[i]);
+    printf("Before encryption: \n");
+    for (i = 0; i < text_sz / 32; i++) {
+        printf("%02x", data[i]);
     }
-    printf("\n");
+    printf("\n\n");
 
 
     clock_t begin_encryption = clock();
 
     // for each chunk, encrypt
-    for (i = 0; i < strlen((const char *)a) / 16; i++) {
+    for (i = 0; i < strlen((const char *)data) / 16; i++) {
         AESencrypt(chunks[i], key);
     }
 
     clock_t end_encryption = clock();
     double time_encryption = (double)(end_encryption - begin_encryption) / CLOCKS_PER_SEC;    
 
-    //convert chunks back into a
-    for (i = 0; i < strlen((const char *)a) / 16; i++) {
-        memcpy(a + (i * 16), chunks[i], 16);
+    //convert chunks back into data
+    for (i = 0; i < strlen((const char *)data) / 16; i++) {
+        memcpy(data + (i * 16), chunks[i], 16);
     }
 
     //print the after encryption string
     printf("After encryption: ");
-    for (i = 0; i < sizeof(a); i++) {
-        printf("%02x", a[i]);
+    for (i = 0; i < sz / 32; i++) {
+        printf("%02x", data[i]);
     }
-    printf("\n");
+    printf("\n\n");
 
     clock_t begin_decryption = clock();
 
     // for each chunk, decrypt
-    for (i = 0; i < strlen((const char *)a) / 16; i++) {
+    for (i = 0; i < strlen((const char *)data) / 16; i++) {
         AESdecrypt(chunks[i], key);
     }
 
@@ -560,20 +582,44 @@ int main() {
     double time_decryption = (double)(end_decryption - begin_decryption) / CLOCKS_PER_SEC;
 
     // merge chunks back into a
-    for (i = 0; i < strlen((const char *)a) / 16; i++) {
-        memcpy(a + (i * 16), chunks[i], 16);
+    for (i = 0; i < strlen((const char *)data) / 16; i++) {
+        memcpy(data + (i * 16), chunks[i], 16);
     }
 
     //print the after encryption string
-    printf("After decryption: ");
-    for (i = 0; i < sizeof(a); i++) {
-        printf("%c", a[i]);
+    printf("After decryption: \n");
+    for (i = 0; i < text_sz / 32; i++) {
+        printf("%02x", data[i]);
     }
 
     printf("\n");
 
     printf("Encryption time: %f seconds\n", time_encryption);
     printf("Decryption time: %f seconds\n", time_decryption);
+
+    // save encrypted data to file
+    FILE *fp2;
+    fp2 = fopen("bee_movie_script_encrypted.txt", "w");
+    if (fp2 == NULL) {
+        printf("Error opening file");
+        return 1;
+    }
+    fwrite(data, text_sz, 1, fp2);
+    fclose(fp2);
+
+    // save decrypted data to file
+    FILE *fp3;
+    fp3 = fopen("bee_movie_script_decrypted.txt", "w");
+    if (fp3 == NULL) {
+        printf("Error opening file");
+        return 1;
+    }
+    fwrite(data, text_sz, 1, fp3);
+    fclose(fp3);
+
+    // free memory
+    free(data);
+    free(chunks);
 
     return 0;
 }
