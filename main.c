@@ -204,12 +204,12 @@ void mixColumns(unsigned char * block) {
     // * 2 == << 1
     // * 3 == << 1 ^ original
 
-    a = i;
-    b = i + 4;
-    c = i + 8;
-    d = i + 12;
-
     for (i = 0; i < 4; i++) {
+        a = i;
+        b = i + 4;
+        c = i + 8;
+        d = i + 12;
+
         // ~ = 2, 3, 1, 1
         new_block[a] = (unsigned char) (
             g(block[a])
@@ -277,12 +277,12 @@ void inverse_mixColumns(unsigned char * block) {
     // * 13 == << 3 + << 2 + original
     // * 14 == << 3 + << 2 + << 1
 
-    a = i;
-    b = i + 4;
-    c = i + 8;
-    d = i + 12;
-
     for (i = 0; i < 4; i++) {
+        a = i;
+        b = i + 4;
+        c = i + 8;
+        d = i + 12;
+
         // ~ = 14, 11, 13, 9
         new_block[a] = (unsigned char) (
             (g(g(g(block[a]))) ^ g(g(block[a])) ^ g(block[a]))
@@ -404,71 +404,73 @@ void KeyExpansion(unsigned char * key, unsigned char * expandKey) {
 void addRoundKey(unsigned char * block, unsigned char * roundKey) {
     int i;
     for (i = 0; i < 16; i++) {
-        state[i] ^= roundKey[i];
+        block[i] ^= roundKey[i];
     }
 }
 
 void AES_Single_Block_Encrypt(unsigned char * message, unsigned char * key) {
-    unsigned char * state = malloc(16);
+    unsigned char * block = malloc(16);
     unsigned char * expandKey = malloc(176);
     int i;
 
     KeyExpansion(key, expandKey);
 
     for (i = 0; i < 16; i++) {
-        state[i] = message[i];
+        block[i] = message[i];
     }
 
-    addRoundKey(state, key);
+    addRoundKey(block, key);
 
     for (i = 0; i < 9; i++) {
-        subBytes(state);
-        shiftSubRows(state);
-        mixColumns(state);
-        addRoundKey(state, expandKey + (16 * (i + 1)));
+        subBytes(block);
+        shiftSubRows(block);
+        mixColumns(block);
+        addRoundKey(block, expandKey + (16 * (i + 1)));
     }
 
-    subBytes(state);
-    shiftSubRows(state);
-    addRoundKey(state, expandKey + 160);
+    subBytes(block);
+    shiftSubRows(block);
+    addRoundKey(block, expandKey + 160);
 
+    // Copy the block back to the message
     for (i = 0; i < 16; i++) {
-        message[i] = state[i];
+        message[i] = block[i];
     }
 
-    free(state);
+    // Cleanup
+    free(block);
     free(expandKey);
 }
 
 void AES_Single_Block_Decrypt(unsigned char * message, unsigned char * key) {
-    unsigned char * state = malloc(16);
+    unsigned char * block = malloc(16);
     unsigned char * expandKey = malloc(176);
     int i;
 
     KeyExpansion(key, expandKey);
 
     for (i = 0; i < 16; i++) {
-        state[i] = message[i];
+        block[i] = message[i];
     }
 
-    addRoundKey(state, expandKey + 160);
+    addRoundKey(block, expandKey + 160);
 
     for (i = 8; i >= 0; i--) {
-        inverse_shiftSubRows(state);
-        inverse_subBytes(state);
-        addRoundKey(state, expandKey + (16 * (i + 1)));
-        inverse_mixColumns(state);
+        inverse_shiftSubRows(block);
+        inverse_subBytes(block);
+        addRoundKey(block, expandKey + (16 * (i + 1)));
+        inverse_mixColumns(block);
     }
 
-    inverse_shiftSubRows(state);
-    inverse_subBytes(state);
-    addRoundKey(state, key);
+    inverse_shiftSubRows(block);
+    inverse_subBytes(block);
+    addRoundKey(block, key);
 
     for (i = 0; i < 16; i++) {
-        message[i] = state[i];
+        message[i] = block[i];
     }
 
-    free(state);
+    free(block);
     free(expandKey);
 }
 
