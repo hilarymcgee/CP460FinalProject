@@ -41,28 +41,28 @@ unsigned char inv_sbox[256] = {
     0x17, 0x2b, 0x04, 0x7e, 0xba, 0x77, 0xd6, 0x26, 0xe1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0c, 0x7d
 };
 
-void printMatrix(unsigned char * state) {
+void printMatrix(unsigned char * block) {
     int i;
     for (i = 0; i < 16; i++) {
-        printf("%02x ", state[i]);
+        printf("%02x ", block[i]);
         if (i % 4 == 3) {
             printf("\n");
         }
     }
 }
 
-void printBinaryAsText(unsigned char * state) {
+void printBinaryAsText(unsigned char * block) {
     int i;
     for (i = 0; i < 16; i++) {
-        printf("%c", state[i]);
+        printf("%c", block[i]);
     }
     printf("\n\n");
 }
 
-void printBinaryAsHex(unsigned char * state) {
+void printBinaryAsHex(unsigned char * block) {
     int i;
     for (i = 0; i < 16; i++) {
-        printf("%02x", state[i]);
+        printf("%02x", block[i]);
     }
     printf("\n\n");
 }
@@ -75,10 +75,10 @@ void printBinary(unsigned char n, int size) {
     printf("\n");
 }
 
-void printHexChunks(unsigned char * state) {
+void printHexChunks(unsigned char * block) {
     int i;
     for (i = 0; i < 16; i++) {
-        printf("%02x ", state[i]);
+        printf("%02x ", block[i]);
         if (i % 4 == 3) {
             printf("\n");
         }
@@ -86,9 +86,9 @@ void printHexChunks(unsigned char * state) {
     printf("\n");
 }
 
-void shiftSubRows(unsigned char * state) {
+void shiftSubRows(unsigned char * block) {
     /*
-        Shifts the rows of the state matrix
+        Shifts the subrows of the current block
         Row 0: No shift
         Row 1: 1 shift (left)
         Row 2: 2 shift (left)
@@ -97,31 +97,31 @@ void shiftSubRows(unsigned char * state) {
     unsigned char temp[16];
     int i;
 
-    // Copy state into temp
+    // Copy block into temp
     for (i = 0; i < 16; i++) {
-        temp[i] = state[i];
+        temp[i] = block[i];
     }
 
-    // Shift subrows
-    state[4] = temp[5];
-    state[5] = temp[6];
-    state[6] = temp[7];
-    state[7] = temp[4];
+    // Shift subrows of temp into block
+    block[4] = temp[5];
+    block[5] = temp[6];
+    block[6] = temp[7];
+    block[7] = temp[4];
 
-    state[8] = temp[10];
-    state[9] = temp[11];
-    state[10] = temp[8];
-    state[11] = temp[9];
+    block[8] = temp[10];
+    block[9] = temp[11];
+    block[10] = temp[8];
+    block[11] = temp[9];
 
-    state[12] = temp[15];
-    state[13] = temp[12];
-    state[14] = temp[13];
-    state[15] = temp[14];
+    block[12] = temp[15];
+    block[13] = temp[12];
+    block[14] = temp[13];
+    block[15] = temp[14];
 }
 
-void inverse_shiftSubRows(unsigned char * state) {
+void inverse_shiftSubRows(unsigned char * block) {
     /*
-        Shifts the rows of the state matrix
+        Shifts the subrows of the current block
         Row 0: No shift
         Row 1: 1 shift (right)
         Row 2: 2 shift (right)
@@ -130,45 +130,47 @@ void inverse_shiftSubRows(unsigned char * state) {
     unsigned char temp[16];
     int i;
 
-    // Copy state into temp
+    // Copy block into temp
     for (i = 0; i < 16; i++) {
-        temp[i] = state[i];
+        temp[i] = block[i];
     }
 
     // Shift subrows
-    state[4] = temp[7];
-    state[5] = temp[4];
-    state[6] = temp[5];
-    state[7] = temp[6];
+    block[4] = temp[7];
+    block[5] = temp[4];
+    block[6] = temp[5];
+    block[7] = temp[6];
 
-    state[8] = temp[10];
-    state[9] = temp[11];
-    state[10] = temp[8];
-    state[11] = temp[9];
+    block[8] = temp[10];
+    block[9] = temp[11];
+    block[10] = temp[8];
+    block[11] = temp[9];
 
-    state[12] = temp[13];
-    state[13] = temp[14];
-    state[14] = temp[15];
-    state[15] = temp[12];
+    block[12] = temp[13];
+    block[13] = temp[14];
+    block[14] = temp[15];
+    block[15] = temp[12];
 }
 
-void subBytes(unsigned char * state) {
+void subBytes(unsigned char * block) {
     /*
-        Substitutes each byte of the state matrix with the corresponding byte in the S-Box
+        Substitutes each byte of the current block with
+        the corresponding byte in the S-Box
     */
     int i;
     for (i = 0; i < 16; i++) {
-        state[i] = sbox[state[i]];
+        block[i] = sbox[block[i]];
     }
 }
 
-void inverse_subBytes(unsigned char * state) {
+void inverse_subBytes(unsigned char * block) {
     /*
-        Substitutes each byte of the state matrix with the corresponding byte in the inverse S-Box
+        Substitutes each byte of the current block with 
+        the corresponding byte in the inverse S-Box
     */
     int i;
     for (i = 0; i < 16; i++) {
-        state[i] = inv_sbox[state[i]];
+        block[i] = inv_sbox[block[i]];
     }
 }
 
@@ -177,186 +179,195 @@ unsigned char g(unsigned char a) {
         Keeps number within Galois Field and applies a left shift to the number
     */
 
-    // if the high bit (7) is set, xor with 0x1b
+    // if the high bit (2^7) is set, xor with 0x1b to keep within GF
     if ((a & 0x80) == 0x80) {
         a = a ^ 0x1b;
     }
 
+    // Apply left shift
     a = a << 1;
 
     return a;
 }
 
-void mixColumns(unsigned char * state) {
-    unsigned char * temp = malloc(16);
-    int i;
-    int a, b, c, d;
+void mixColumns(unsigned char * block) {
+    unsigned char * new_block = malloc(16);
+    int i, a, b, c, d;
 
-    // addition in GF(2^8) is just XOR
-    // multiplication in GF(2^8)
-    // if 2^8 is high bit is set, xor with 0x1b and shift left
-    // i applied this using the function g() on any multiplication
+    // Matrix Multiplication in GF(2^8)
+    // 2 3 1 1
+    // 1 2 3 1
+    // 1 1 2 3
+    // 3 1 1 2
 
+    // * 1 == original
     // * 2 == << 1
     // * 3 == << 1 ^ original
 
+    a = i;
+    b = i + 4;
+    c = i + 8;
+    d = i + 12;
+
     for (i = 0; i < 4; i++) {
-
-        // Column Indexes
-        a = i;
-        b = i+4;
-        c = i+8;
-        d = i+12;
-
         // ~ = 2, 3, 1, 1
-        temp[a] = (unsigned char) (
-            g(state[a])
+        new_block[a] = (unsigned char) (
+            g(block[a])
             ^
-            (g(state[b]) ^ state[b])
+            (g(block[b]) ^ block[b])
             ^
-            (state[c])
+            (block[c])
             ^ 
-            (state[d])
+            (block[d])
         );
         // ~ = 1, 2, 3, 1
-        temp[b] = (unsigned char) (
-            (state[a])
+        new_block[b] = (unsigned char) (
+            (block[a])
             ^
-            g(state[b])
+            g(block[b])
             ^
-            (g(state[c]) ^ state[c])
+            (g(block[c]) ^ block[c])
             ^
-            (state[d])
+            (block[d])
         );
         // ~ = 1, 1, 2, 3
-        temp[c] = (unsigned char) (
-            (state[a])
+        new_block[c] = (unsigned char) (
+            (block[a])
             ^
-            (state[b])
+            (block[b])
             ^
-            g(state[c])
+            g(block[c])
             ^
-            (g(state[d]) ^ state[d])
+            (g(block[d]) ^ block[d])
         );
         // ~ = 3, 1, 1, 2
-        temp[d] = (unsigned char) (
-            (g(state[a]) ^ state[a])
+        new_block[d] = (unsigned char) (
+            (g(block[a]) ^ block[a])
             ^
-            (state[b])
+            (block[b])
             ^
-            (state[c])
+            (block[c])
             ^
-            g(state[d])
+            g(block[d])
         );
     }
 
+    // replace block with new_block
     for (i = 0; i < 16; i++) {
-        state[i] = temp[i];
+        block[i] = new_block[i];
     }
-    free(temp);
+
+    //Cleanup
+    free(new_block);
 }
 
-void inverse_mixColumns(unsigned char * state) {
-    unsigned char * temp = malloc(16);
-    int i;
-    int a, b, c, d;
+void inverse_mixColumns(unsigned char * block) {
+    unsigned char * new_block = malloc(16);
+    int i, a, b, c, d;
 
+    // Matrix Multiplication in GF(2^8)
+    // 14 11 13 09
+    // 09 14 11 13
+    // 13 09 14 11
+    // 11 13 09 14
+
+    // Reference on how to multiply using shifts and XOR
     // * 9 == << 3 + original
     // * 11 == << 3 + << 1 + original
     // * 13 == << 3 + << 2 + original
     // * 14 == << 3 + << 2 + << 1
 
-    for (i = 0; i < 4; i++) {
-        a = i;
-        b = i+4;
-        c = i+8;
-        d = i+12;
+    a = i;
+    b = i + 4;
+    c = i + 8;
+    d = i + 12;
 
+    for (i = 0; i < 4; i++) {
         // ~ = 14, 11, 13, 9
-        temp[a] = (unsigned char) (
-            (g(g(g(state[a]))) ^ g(g(state[a])) ^ g(state[a]))
+        new_block[a] = (unsigned char) (
+            (g(g(g(block[a]))) ^ g(g(block[a])) ^ g(block[a]))
             ^
-            (g(g(g(state[b]))) ^ g(state[b]) ^ state[b])
+            (g(g(g(block[b]))) ^ g(block[b]) ^ block[b])
             ^
-            (g(g(g(state[c]))) ^ g(g(state[c])) ^ state[c])
+            (g(g(g(block[c]))) ^ g(g(block[c])) ^ block[c])
             ^
-            (g(g(g(state[d]))) ^ state[d])
+            (g(g(g(block[d]))) ^ block[d])
         );
         // ~ = 9, 14, 11, 13
-        temp[b] = (unsigned char) (
-            (g(g(g(state[a]))) ^ state[a])
+        new_block[b] = (unsigned char) (
+            (g(g(g(block[a]))) ^ block[a])
             ^
-            (g(g(g(state[b]))) ^ g(g(state[b])) ^ g(state[b]))
+            (g(g(g(block[b]))) ^ g(g(block[b])) ^ g(block[b]))
             ^
-            (g(g(g(state[c]))) ^ g(state[c]) ^ state[c])
+            (g(g(g(block[c]))) ^ g(block[c]) ^ block[c])
             ^
-            (g(g(g(state[d]))) ^ g(g(state[d])) ^ state[d])
+            (g(g(g(block[d]))) ^ g(g(block[d])) ^ block[d])
         );
         // ~ = 13, 9, 14, 11
-        temp[c] = (unsigned char) (
-            (g(g(g(state[a]))) ^ g(g(state[a])) ^ state[a])
+        new_block[c] = (unsigned char) (
+            (g(g(g(block[a]))) ^ g(g(block[a])) ^ block[a])
             ^
-            (g(g(g(state[b]))) ^ state[b])
+            (g(g(g(block[b]))) ^ block[b])
             ^
-            (g(g(g(state[c]))) ^ g(g(state[c])) ^ g(state[c]))
+            (g(g(g(block[c]))) ^ g(g(block[c])) ^ g(block[c]))
             ^
-            (g(g(g(state[d]))) ^ g(state[d]) ^ state[d])
+            (g(g(g(block[d]))) ^ g(block[d]) ^ block[d])
         );
         // ~ = 11, 13, 9, 14
-        temp[d] = (unsigned char) (
-            (g(g(g(state[a]))) ^ g(state[a]) ^ state[a])
+        new_block[d] = (unsigned char) (
+            (g(g(g(block[a]))) ^ g(block[a]) ^ block[a])
             ^
-            (g(g(g(state[b]))) ^ g(g(state[b])) ^ state[b])
+            (g(g(g(block[b]))) ^ g(g(block[b])) ^ block[b])
             ^
-            (g(g(g(state[c]))) ^ state[c])
+            (g(g(g(block[c]))) ^ block[c])
             ^
-            (g(g(g(state[d]))) ^ g(g(state[d])) ^ g(state[d]))
+            (g(g(g(block[d]))) ^ g(g(block[d])) ^ g(block[d]))
         );
     }
 
+    // replace current block with updated block
     for (i = 0; i < 16; i++) {
-        state[i] = temp[i];
+        block[i] = new_block[i];
     }
-    free(temp);
+
+    //Cleanup
+    free(new_block);
 }
 
-void KeyExpansionHeart(unsigned char * state) {
+void KeyExpansionHeart(unsigned char * block) {
     //Rotate left:
-    //unsigned int * q = (unsigned int *)state;
-    //* q = (* q >> 8) | ((* q & 0xff) << 24);
-
-    unsigned char temp = state[0];
-    state[0] = state[1];
-    state[1] = state[2];
-    state[2] = state[3];
-    state[4] = temp;
+    unsigned char temp = block[0];
+    block[0] = block[1];
+    block[1] = block[2];
+    block[2] = block[3];
+    block[4] = temp;
 
     // S-box four bytes:
-    state[0] = sbox[state[0]];
-    state[1] = sbox[state[1]];
-    state[2] = sbox[state[2]];
-    state[3] = sbox[state[3]];
+    block[0] = sbox[block[0]];
+    block[1] = sbox[block[1]];
+    block[2] = sbox[block[2]];
+    block[3] = sbox[block[3]];
 };
 
 unsigned char rcon(unsigned char in) {
-        unsigned char c=1;
-        if(in == 0) {
-            return 0;
+    unsigned char c = 1;
+    if(in == 0) {
+        return 0;
+    }
+
+    while(in != 1) {
+        unsigned char b;
+        b = c & 0x80;
+        c <<= 1;
+
+        if(b == 0x80) {
+            c ^= 0x1b;
         }
 
-        while(in != 1) {
-            unsigned char b;
-            b = c & 0x80;
-            c <<= 1;
+        in--;
+    }
 
-            if(b == 0x80) {
-                c ^= 0x1b;
-            }
-
-            in--;
-        }
-
-        return c;
+    return c;
 }
 
 void KeyExpansion(unsigned char * key, unsigned char * expandKey) {
@@ -390,7 +401,7 @@ void KeyExpansion(unsigned char * key, unsigned char * expandKey) {
     }
 }
 
-void addRoundKey(unsigned char * state, unsigned char * roundKey) {
+void addRoundKey(unsigned char * block, unsigned char * roundKey) {
     int i;
     for (i = 0; i < 16; i++) {
         state[i] ^= roundKey[i];
