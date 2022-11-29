@@ -3,24 +3,6 @@
 #include <time.h>
 #include <string.h>
 
-/*
-Functions:
-    Byte Substitution
-    Shift Rows (and inverse)
-        -col 0, no shift
-        -col 1, 1 shift (left)
-        -col 2, 2 shift (left)
-        -col 3, 3 shift (left)
-
-    Mix Columns
-    Key Addition?
-
-Lookup Table:
-    S-Box
-    Inverse S-Box
-*/
-
-//AES S-Box
 unsigned char sbox[256] = {
     0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
     0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0,
@@ -40,7 +22,6 @@ unsigned char sbox[256] = {
     0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16
 };
 
-//AES Inverse S-Box
 unsigned char inv_sbox[256] = {
     0x52, 0x09, 0x6a, 0xd5, 0x30, 0x36, 0xa5, 0x38, 0xbf, 0x40, 0xa3, 0x9e, 0x81, 0xf3, 0xd7, 0xfb,
     0x7c, 0xe3, 0x39, 0x82, 0x9b, 0x2f, 0xff, 0x87, 0x34, 0x8e, 0x43, 0x44, 0xc4, 0xde, 0xe9, 0xcb,
@@ -713,22 +694,24 @@ void test_AES_multiblock_CBC_Bee_Movie() {
     unsigned char *decrypted_data = malloc(sz);
 
     // print sz
-    printf("File Size: %d bits\n", sz);
+    printf("File Size: %d bits\n", text_sz);
+    
+    if (text_sz % 16 != 0) {
+        printf("Warning: File size is not a multiple of 128 bits. Data will be padded with %d 0s.\n", (text_sz % 16));
+    }
 
     // 128-bit key
     unsigned char key[16] = "123456789abcdefg";
     unsigned char iv[16] = "23456789abcdefg1";
-    // unsigned char key[16] = {
-    //     0x2B, 0x7E, 0x15, 0x16, 
-    //     0x28, 0xAE, 0xD2, 0xA6, 
-    //     0xAB, 0xF7, 0x15, 0x88, 
-    //     0x09, 0xCF, 0x4F, 0x3C
-    // };
 
     //print the before encryption string
     printf("Before encryption: \n");
     for (i = 0; i < text_sz / 128; i++) { // limit text printed in console (/ 32)
         printf("%02x", data[i]);
+    }
+    printf("\n");
+    for (i = 0; i < text_sz / 128; i++) { // limit text printed in console (/ 32)
+        printf("%c", data[i]);
     }
     printf("\n\n");
 
@@ -746,6 +729,10 @@ void test_AES_multiblock_CBC_Bee_Movie() {
     for (i = 0; i < sz / 128; i++) {
         printf("%02x", data[i]);
     }
+    printf("\n");
+    for (i = 0; i < text_sz / 128; i++) { // limit text printed in console (/ 32)
+        printf("%c", data[i]);
+    }
     printf("\n\n");
 
     clock_t begin_decryption = clock();
@@ -761,11 +748,14 @@ void test_AES_multiblock_CBC_Bee_Movie() {
     for (i = 0; i < text_sz / 128; i++) {
         printf("%02x", data[i]);
     }
-
     printf("\n");
+    for (i = 0; i < text_sz / 128; i++) { // limit text printed in console (/ 32)
+        printf("%c", data[i]);
+    }
+    printf("\n\n");
 
     printf("Encryption time: %f seconds\n", time_encryption);
-    printf("Decryption time: %f seconds\n", time_decryption);
+    printf("Decryption time: %f seconds\n\n", time_decryption);
 
     // save encrypted data to file
     FILE *fp2;
@@ -792,10 +782,17 @@ void test_AES_multiblock_CBC_Bee_Movie() {
 }
 
 int main() {
+    clock_t file_start = clock();
+    printf("Testing ECB\n");
     test_AES_multiblock_ECB();
     printf("\n");
+    printf("Testing CBC\n");
     test_AES_multiblock_CBC();
     printf("\n");
+    printf("Testing CBC with Bee Movie Script from txt file\n");
     test_AES_multiblock_CBC_Bee_Movie();
+    clock_t file_end = clock();
+    double file_time = (double)(file_end - file_start) / CLOCKS_PER_SEC;
+    printf("Total time (all tests): %f seconds\n", file_time);
     return 0;
 }
