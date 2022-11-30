@@ -1,3 +1,14 @@
+/*
+    Written for CP460 (Fall 2022)
+    by Sterling Fullerton and Hilary McGee
+
+    This program is designed to demonstrate the implementation of a
+    AES encryption algorithm. The program will take a 128-bit key and
+    a 128-bit plaintext and encrypt it using the AES algorithm. The
+    program will then decrypt the ciphertext and print the original
+    plaintext.
+*/
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
@@ -744,12 +755,11 @@ void test_AES_multiblock_CBC_Bee_Movie() {
     for (i = 0; i < text_sz / 128; i++) { // limit text printed in console (/ 32)
         printf("%02x", data[i]);
     }
-    printf("\n");
+    printf("\n\n");
     for (i = 0; i < text_sz / 128; i++) { // limit text printed in console (/ 32)
         printf("%c", data[i]);
     }
     printf("\n\n");
-
 
     clock_t begin_encryption = clock();
 
@@ -774,7 +784,7 @@ void test_AES_multiblock_CBC_Bee_Movie() {
     for (i = 0; i < sz / 128; i++) {
         printf("%02x", data[i]);
     }
-    printf("\n");
+    printf("\n\n");
     for (i = 0; i < text_sz / 128; i++) { // limit text printed in console (/ 32)
         printf("%c", data[i]);
     }
@@ -820,15 +830,9 @@ int main() {
     printf("Testing ECB\n");
     test_AES_multiblock_ECB();
 
-    // Pause
-    getchar();
-
     printf("Testing CBC\n");
     test_AES_multiblock_CBC();
 
-    // Pause
-    getchar();
-    
     printf("Testing CBC with Bee Movie Script from txt file\n");
     test_AES_multiblock_CBC_Bee_Movie();
     return 0;
