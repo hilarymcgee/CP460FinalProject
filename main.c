@@ -189,14 +189,15 @@ unsigned char g(unsigned char a) {
     /*
         Keeps number within Galois Field and applies a left shift to the number
     */
-
-    // if the high bit (2^7) is set, xor with 0x1b to keep within GF
-    if ((a & 0x80) == 0x80) {
-        a = a ^ 0x1b;
-    }
+    unsigned char leftBit = (a & 0x80);
 
     // Apply left shift
     a = a << 1;
+
+    // if the high bit (2^7) is set, xor with 0x1b to keep within GF
+    if (leftBit == 0x80) {
+        a = a ^ 0x1b;
+    }
 
     return a;
 }
@@ -826,14 +827,96 @@ void test_AES_multiblock_CBC_Bee_Movie() {
     free(data);
 }
 
+void test_AES_from_console_input() {
+    int i;
+
+    // 128-bit key
+    unsigned char key[16] = "123456789abcdefg";
+    unsigned char iv[16] = "23456789abcdefg1";
+
+    // Max String Size
+    int max_sz = 1024;
+
+    // get message from console
+    char message[max_sz];
+    printf("Enter message: \n");
+    fgets(message, max_sz, stdin);
+    printf("\n");
+
+    // length of message in bytes as each char counts as 1 byte
+    int message_len = strlen((const char *) message);
+
+    // make size a multiple of 128 bits (16 bytes) (not chopping off any data)
+    int sz = message_len + 16 - (message_len % 16);
+
+    // each block in AES is always 128 bits (16 bytes) even though we have only implemented AES-128
+    int blocks = sz / 16;
+
+    // Create our array of unsigned chars
+    unsigned char *data = malloc(sz);
+
+    // copy message into data
+    for (i = 0; i < message_len; i++) {
+        data[i] = message[i];
+    }
+
+    // Size prints kinda weird but it's fine i guess
+    // print sz
+    printf("Message Size         : %d bytes\n", message_len);
+    printf("Message Size (padded): %d bytes\n", sz);
+    printf("Blocks               : %d\n", blocks);
+    printf("\n");
+
+    // print the before encryption string
+    printf("Before encryption: \n");
+    for (i = 0; i < sz; i++) {
+        printf("%02x", data[i]);
+    }
+    printf("\n\n");
+
+    //Encrypt
+    AES_MultiBlock_Encrypt_CBC(data, blocks, key, iv);
+
+    //print the after encryption string
+    printf("After encryption: \n");
+    for (i = 0; i < sz; i++) {
+        printf("%02x", data[i]);
+    }
+    printf("\n\n");
+
+    //Decrypt
+    AES_MultiBlock_Decrypt_CBC(data, blocks, key, iv);
+
+    //print the after decryption string
+    printf("After decryption: \n");
+    for (i = 0; i < sz; i++) {
+        printf("%02x", data[i]);
+    }
+    printf("\n\n");
+
+    //print the after decryption string in txt
+    printf("After decryption: \n");
+    for (i = 0; i < sz; i++) {
+        printf("%c", data[i]);
+    }
+    printf("\n\n");
+
+    // Cleanup
+    free(data);
+}
+
 int main() {
-    printf("Testing ECB\n");
-    test_AES_multiblock_ECB();
+    // printf("Testing ECB\n");
+    // test_AES_multiblock_ECB();
 
-    printf("Testing CBC\n");
-    test_AES_multiblock_CBC();
+    // printf("Testing CBC\n");
+    // test_AES_multiblock_CBC();
 
-    printf("Testing CBC with Bee Movie Script from txt file\n");
-    test_AES_multiblock_CBC_Bee_Movie();
+    // printf("Testing CBC with Bee Movie Script from txt file\n");
+    // test_AES_multiblock_CBC_Bee_Movie();
+
+    printf("Testing AES from console input\n\n");
+    test_AES_from_console_input();
+
     return 0;
 }
