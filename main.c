@@ -194,7 +194,7 @@ unsigned char g(unsigned char a) {
     // Apply left shift
     a = a << 1;
 
-    // if the high bit (2^7) is set, xor with 0x1b to keep within GF
+    // if the high bit (2^7) was set, xor with 0x1b to keep within GF
     if (leftBit == 0x80) {
         a = a ^ 0x1b;
     }
@@ -827,24 +827,34 @@ void test_AES_multiblock_CBC_Bee_Movie() {
     free(data);
 }
 
-void test_AES_from_console_input() {
+void AES_from_console_input() {
     int i;
+    int max_sz = 1024; // Max Buffer Size
 
     // 128-bit key
-    unsigned char key[16] = "123456789abcdefg";
-    unsigned char iv[16] = "23456789abcdefg1";
+    unsigned char key[16] = {
+        0xbd, 0xcc, 0xf2, 0xa7,
+        0x00, 0x6f, 0x16, 0xc8,
+        0x22, 0x30, 0xdd, 0x2d,
+        0xb4, 0x8b, 0xfd, 0x7c
+    };
+    unsigned char iv[16] = {
+        0x54, 0xca, 0xe7, 0xf8,
+        0x50, 0x1c, 0x11, 0x10,
+        0x3d, 0x68, 0x84, 0x7f,
+        0x91, 0x9b, 0x1d, 0x42
+    };
 
-    // Max String Size
-    int max_sz = 1024;
-
-    // get message from console
     char message[max_sz];
-    printf("Enter message: \n");
+
+    printf("Enter message to Encrypt: \n");
     fgets(message, max_sz, stdin);
     printf("\n");
 
+
+
     // length of message in bytes as each char counts as 1 byte
-    int message_len = strlen((const char *) message);
+    int message_len = strlen((const char *) message) - 1; // -1 to remove newline / null terminator
 
     // make size a multiple of 128 bits (16 bytes) (not chopping off any data)
     int sz = message_len + 16 - (message_len % 16);
@@ -855,13 +865,24 @@ void test_AES_from_console_input() {
     // Create our array of unsigned chars
     unsigned char *data = malloc(sz);
 
-    // copy message into data
+    // copy data from buffer
     for (i = 0; i < message_len; i++) {
         data[i] = message[i];
     }
 
-    // Size prints kinda weird but it's fine i guess
-    // print sz
+
+    printf("Key                  : ");
+    for (i = 0; i < 16; i++) {
+        printf("%02x", key[i]);
+    }
+    printf("\n");
+
+    printf("IV                   : ");
+    for (i = 0; i < 16; i++) {
+        printf("%02x", iv[i]);
+    }
+    printf("\n");
+
     printf("Message Size         : %d bytes\n", message_len);
     printf("Message Size (padded): %d bytes\n", sz);
     printf("Blocks               : %d\n", blocks);
@@ -915,8 +936,8 @@ int main() {
     // printf("Testing CBC with Bee Movie Script from txt file\n");
     // test_AES_multiblock_CBC_Bee_Movie();
 
-    printf("Testing AES from console input\n\n");
-    test_AES_from_console_input();
+    printf("AES from console input\n\n");
+    AES_from_console_input();
 
     return 0;
 }
