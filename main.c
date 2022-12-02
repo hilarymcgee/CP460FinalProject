@@ -2,6 +2,8 @@
     Written for CP460 (Fall 2022)
     by Sterling Fullerton and Hilary McGee
 
+    AES-128 implementation
+
     This program is designed to demonstrate the implementation of a
     AES encryption algorithm. The program will take a 128-bit key and
     a 128-bit plaintext and encrypt it using the AES algorithm. The
@@ -420,16 +422,11 @@ void addRoundKey(unsigned char * block, unsigned char * roundKey) {
     }
 }
 
-void AES_Single_Block_Encrypt(unsigned char * message, unsigned char * key) {
-    unsigned char * block = malloc(16);
+void AES_Single_Block_Encrypt(unsigned char * block, unsigned char * key) {
     unsigned char * expandKey = malloc(176);
     int i;
 
     KeyExpansion(key, expandKey);
-
-    for (i = 0; i < 16; i++) {
-        block[i] = message[i];
-    }
 
     addRoundKey(block, key);
 
@@ -444,26 +441,15 @@ void AES_Single_Block_Encrypt(unsigned char * message, unsigned char * key) {
     shiftSubRows(block);
     addRoundKey(block, expandKey + 160);
 
-    // Copy the block back to the message
-    for (i = 0; i < 16; i++) {
-        message[i] = block[i];
-    }
-
     // Cleanup
-    free(block);
     free(expandKey);
 }
 
-void AES_Single_Block_Decrypt(unsigned char * message, unsigned char * key) {
-    unsigned char * block = malloc(16);
+void AES_Single_Block_Decrypt(unsigned char * block, unsigned char * key) {
     unsigned char * expandKey = malloc(176);
     int i;
 
     KeyExpansion(key, expandKey);
-
-    for (i = 0; i < 16; i++) {
-        block[i] = message[i];
-    }
 
     addRoundKey(block, expandKey + 160);
 
@@ -478,11 +464,7 @@ void AES_Single_Block_Decrypt(unsigned char * message, unsigned char * key) {
     inverse_subBytes(block);
     addRoundKey(block, key);
 
-    for (i = 0; i < 16; i++) {
-        message[i] = block[i];
-    }
-
-    free(block);
+    // Cleanup
     free(expandKey);
 }
 
@@ -895,8 +877,13 @@ void AES_from_console_input() {
     }
     printf("\n\n");
 
+    // Time encryption
+    clock_t begin_encryption = clock();
+
     //Encrypt
     AES_MultiBlock_Encrypt_CBC(data, blocks, key, iv);
+
+    clock_t end_encryption = clock();
 
     //print the after encryption string
     printf("After encryption: \n");
@@ -905,8 +892,13 @@ void AES_from_console_input() {
     }
     printf("\n\n");
 
+    // Time decryption
+    clock_t begin_decryption = clock();
+
     //Decrypt
     AES_MultiBlock_Decrypt_CBC(data, blocks, key, iv);
+
+    clock_t end_decryption = clock();
 
     //print the after decryption string
     printf("After decryption: \n");
@@ -921,6 +913,12 @@ void AES_from_console_input() {
         printf("%c", data[i]);
     }
     printf("\n\n");
+
+    double time_encryption = (double)(end_encryption - begin_encryption) / CLOCKS_PER_SEC;
+    double time_decryption = (double)(end_decryption - begin_decryption) / CLOCKS_PER_SEC;
+
+    printf("Encryption time: %f seconds\n", time_encryption);
+    printf("Decryption time: %f seconds\n\n", time_decryption);
 
     // Cleanup
     free(data);
